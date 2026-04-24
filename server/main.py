@@ -228,14 +228,18 @@ def get_recent_transactions():
     return recent_transactions
 
 @app.get("/api/reports/quarterly")
-def get_quarterly_reports():
-    """Get quarterly performance reports"""
-    # Calculate quarterly statistics from orders
-    quarters = {}
+def get_quarterly_reports(
+    warehouse: Optional[str] = None,
+    category: Optional[str] = None,
+    month: Optional[str] = None
+):
+    """Get quarterly performance reports with optional filtering"""
+    filtered_orders = apply_filters(orders, warehouse, category)
+    filtered_orders = filter_by_month(filtered_orders, month)
 
-    for order in orders:
+    quarters = {}
+    for order in filtered_orders:
         order_date = order.get('order_date', '')
-        # Determine quarter
         if '2025-01' in order_date or '2025-02' in order_date or '2025-03' in order_date:
             quarter = 'Q1-2025'
         elif '2025-04' in order_date or '2025-05' in order_date or '2025-06' in order_date:
@@ -248,20 +252,13 @@ def get_quarterly_reports():
             continue
 
         if quarter not in quarters:
-            quarters[quarter] = {
-                'quarter': quarter,
-                'total_orders': 0,
-                'total_revenue': 0,
-                'delivered_orders': 0,
-                'avg_order_value': 0
-            }
+            quarters[quarter] = {'quarter': quarter, 'total_orders': 0, 'total_revenue': 0, 'delivered_orders': 0, 'avg_order_value': 0}
 
         quarters[quarter]['total_orders'] += 1
         quarters[quarter]['total_revenue'] += order.get('total_value', 0)
         if order.get('status') == 'Delivered':
             quarters[quarter]['delivered_orders'] += 1
 
-    # Calculate averages and fulfillment rate
     result = []
     for q, data in quarters.items():
         if data['total_orders'] > 0:
@@ -269,37 +266,32 @@ def get_quarterly_reports():
             data['fulfillment_rate'] = round((data['delivered_orders'] / data['total_orders']) * 100, 1)
         result.append(data)
 
-    # Sort by quarter
     result.sort(key=lambda x: x['quarter'])
     return result
 
 @app.get("/api/reports/monthly-trends")
-def get_monthly_trends():
-    """Get month-over-month trends"""
-    months = {}
+def get_monthly_trends(
+    warehouse: Optional[str] = None,
+    category: Optional[str] = None,
+    month: Optional[str] = None
+):
+    """Get month-over-month trends with optional filtering"""
+    filtered_orders = apply_filters(orders, warehouse, category)
+    filtered_orders = filter_by_month(filtered_orders, month)
 
-    for order in orders:
+    months = {}
+    for order in filtered_orders:
         order_date = order.get('order_date', '')
         if not order_date:
             continue
-
-        # Extract month (format: YYYY-MM-DD)
-        month = order_date[:7]  # Gets YYYY-MM
-
-        if month not in months:
-            months[month] = {
-                'month': month,
-                'order_count': 0,
-                'revenue': 0,
-                'delivered_count': 0
-            }
-
-        months[month]['order_count'] += 1
-        months[month]['revenue'] += order.get('total_value', 0)
+        m = order_date[:7]
+        if m not in months:
+            months[m] = {'month': m, 'order_count': 0, 'revenue': 0, 'delivered_count': 0}
+        months[m]['order_count'] += 1
+        months[m]['revenue'] += order.get('total_value', 0)
         if order.get('status') == 'Delivered':
-            months[month]['delivered_count'] += 1
+            months[m]['delivered_count'] += 1
 
-    # Convert to list and sort
     result = list(months.values())
     result.sort(key=lambda x: x['month'])
     return result
