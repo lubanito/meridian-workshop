@@ -26,6 +26,9 @@
             Reports
           </router-link>
         </nav>
+        <button class="theme-toggle" @click="toggleTheme" :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
+          {{ isDark ? '☀️' : '🌙' }}
+        </button>
         <LanguageSwitcher />
         <ProfileMenu
           @show-profile-details="showProfileDetails = true"
@@ -80,6 +83,24 @@ export default {
     const showProfileDetails = ref(false)
     const showTasks = ref(false)
     const apiTasks = ref([])
+
+    // Dark mode
+    const isDark = ref(false)
+
+    const applyTheme = (dark) => {
+      if (dark) {
+        document.documentElement.setAttribute('data-theme', 'dark')
+      } else {
+        document.documentElement.removeAttribute('data-theme')
+      }
+      isDark.value = dark
+    }
+
+    const toggleTheme = () => {
+      const next = !isDark.value
+      localStorage.setItem('theme', next ? 'dark' : 'light')
+      applyTheme(next)
+    }
 
     // Merge mock tasks from currentUser with API tasks
     const tasks = computed(() => {
@@ -146,7 +167,13 @@ export default {
       }
     }
 
-    onMounted(loadTasks)
+    onMounted(() => {
+      loadTasks()
+      const saved = localStorage.getItem('theme')
+      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        applyTheme(true)
+      }
+    })
 
     return {
       t,
@@ -155,13 +182,43 @@ export default {
       tasks,
       addTask,
       deleteTask,
-      toggleTask
+      toggleTask,
+      isDark,
+      toggleTheme
     }
   }
 }
 </script>
 
 <style>
+:root {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text-heading: #0f172a;
+  --color-text-primary: #1e293b;
+  --color-text-body: #334155;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-bg-subtle: #f1f5f9;
+  --color-accent: #2563eb;
+  --color-accent-bg: #eff6ff;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text-heading: #f1f5f9;
+  --color-text-primary: #e2e8f0;
+  --color-text-body: #cbd5e1;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-border: #334155;
+  --color-bg-subtle: #1e293b;
+  --color-accent: #2563eb;
+  --color-accent-bg: #1e3a5f;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -170,8 +227,8 @@ export default {
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: #f8fafc;
-  color: #1e293b;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -183,8 +240,8 @@ body {
 }
 
 .top-nav {
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
@@ -218,16 +275,16 @@ body {
 .logo h1 {
   font-size: 1.375rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   letter-spacing: -0.025em;
 }
 
 .subtitle {
   font-size: 0.813rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-weight: 400;
   padding-left: 0.75rem;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid var(--color-border);
 }
 
 .nav-tabs {
@@ -237,7 +294,7 @@ body {
 
 .nav-tabs a {
   padding: 0.625rem 1.25rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.938rem;
@@ -247,13 +304,13 @@ body {
 }
 
 .nav-tabs a:hover {
-  color: #0f172a;
-  background: #f1f5f9;
+  color: var(--color-text-heading);
+  background: var(--color-bg-subtle);
 }
 
 .nav-tabs a.active {
-  color: #2563eb;
-  background: #eff6ff;
+  color: var(--color-accent);
+  background: var(--color-accent-bg);
 }
 
 .nav-tabs a.active::after {
@@ -263,7 +320,24 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: #2563eb;
+  background: var(--color-accent);
+}
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.375rem 0.625rem;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-right: 0.75rem;
+  line-height: 1;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-text-secondary);
 }
 
 .main-content {
@@ -281,13 +355,13 @@ body {
 .page-header h2 {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   margin-bottom: 0.375rem;
   letter-spacing: -0.025em;
 }
 
 .page-header p {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.938rem;
 }
 
@@ -299,20 +373,20 @@ body {
 }
 
 .stat-card {
-  background: white;
+  background: var(--color-surface);
   padding: 1.25rem;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   transition: all 0.2s ease;
 }
 
 .stat-card:hover {
-  border-color: #cbd5e1;
+  border-color: var(--color-text-body);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .stat-label {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -323,7 +397,7 @@ body {
 .stat-value {
   font-size: 2.25rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   letter-spacing: -0.025em;
 }
 
@@ -344,10 +418,10 @@ body {
 }
 
 .card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 10px;
   padding: 1.25rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   margin-bottom: 1.25rem;
 }
 
@@ -357,13 +431,13 @@ body {
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.875rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .card-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   letter-spacing: -0.025em;
 }
 
@@ -377,16 +451,16 @@ table {
 }
 
 thead {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 th {
   text-align: left;
   padding: 0.5rem 0.75rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-secondary);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -394,8 +468,8 @@ th {
 
 td {
   padding: 0.5rem 0.75rem;
-  border-top: 1px solid #f1f5f9;
-  color: #334155;
+  border-top: 1px solid var(--color-bg-subtle);
+  color: var(--color-text-body);
   font-size: 0.875rem;
 }
 
@@ -404,7 +478,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #f8fafc;
+  background: var(--color-bg);
 }
 
 .badge {
@@ -470,7 +544,7 @@ tbody tr:hover {
 .loading {
   text-align: center;
   padding: 3rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.938rem;
 }
 
