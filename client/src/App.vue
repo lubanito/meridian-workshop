@@ -25,6 +25,9 @@
           <router-link to="/reports" :class="{ active: $route.path === '/reports' }">
             Reports
           </router-link>
+          <router-link to="/restocking" :class="{ active: $route.path === '/restocking' }">
+            Restocking
+          </router-link>
         </nav>
         <button class="theme-toggle" @click="toggleTheme" :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
           {{ isDark ? '☀️' : '🌙' }}
