@@ -5,7 +5,8 @@
       "command": "npx",
       "args": [
         "-y",
-        "@playwright/mcp@0.0.37"
+        "@playwright/mcp@0.0.37",
+        "--headless"
       ],
       "env": {}
     },
