@@ -6,6 +6,8 @@ export default {
     orders: 'Orders',
     finance: 'Finance',
     demandForecast: 'Demand Forecast',
+    reports: 'Reports',
+    restocking: 'Restocking',
     companyName: 'Catalyst Components',
     subtitle: 'Inventory Management System'
   },
@@ -186,6 +188,67 @@ export default {
       trend: 'Trend',
       period: 'Period'
     }
+  },
+
+  // Reports
+  reports: {
+    title: 'Performance Reports',
+    description: 'View quarterly performance metrics and monthly trends',
+    quarterlyPerformance: 'Quarterly Performance',
+    monthlyTrend: 'Monthly Revenue Trend',
+    monthOverMonth: 'Month-over-Month Analysis',
+    table: {
+      quarter: 'Quarter',
+      totalOrders: 'Total Orders',
+      totalRevenue: 'Total Revenue',
+      avgOrderValue: 'Avg Order Value',
+      fulfillmentRate: 'Fulfillment Rate',
+      month: 'Month',
+      orders: 'Orders',
+      revenue: 'Revenue',
+      change: 'Change',
+      growthRate: 'Growth Rate'
+    },
+    stats: {
+      totalRevenue: 'Total Revenue (YTD)',
+      avgMonthlyRevenue: 'Avg Monthly Revenue',
+      totalOrders: 'Total Orders (YTD)',
+      bestQuarter: 'Best Performing Quarter'
+    }
+  },
+
+  // Restocking
+  restocking: {
+    title: 'Restocking Recommendations',
+    description: 'Purchase order recommendations based on current stock levels and demand forecasts.',
+    belowReorderPoint: 'Below Reorder Point',
+    increasingDemand: 'Increasing Demand',
+    totalCandidates: 'Total Candidates',
+    budgetUtilization: 'Budget Utilization',
+    budgetCeiling: 'Budget Ceiling',
+    budgetLabel: 'Budget ceiling ($)',
+    items: 'items',
+    overBudget: 'Over budget',
+    table: {
+      title: 'Recommended Purchase Orders',
+      priority: 'Priority',
+      name: 'Name',
+      category: 'Category',
+      onHand: 'On Hand',
+      reorderPoint: 'Reorder Point',
+      demandForecast: 'Demand Forecast',
+      qtyToOrder: 'Qty to Order',
+      unitCost: 'Unit Cost',
+      estCost: 'Est. Cost'
+    },
+    summary: {
+      totalSelected: 'Total selected:',
+      of: 'of',
+      budget: 'budget',
+      overBudget: 'Over Budget',
+      withinBudget: 'Within Budget'
+    },
+    generatePO: 'Generate Purchase Orders'
   },
 
   // Filters

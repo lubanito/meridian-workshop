@@ -6,6 +6,8 @@ export default {
     orders: '注文',
     finance: '財務',
     demandForecast: '需要予測',
+    reports: 'レポート',
+    restocking: '補充',
     companyName: '触媒コンポーネンツ',
     subtitle: '在庫管理システム'
   },
@@ -186,6 +188,67 @@ export default {
       trend: 'トレンド',
       period: '期間'
     }
+  },
+
+  // Reports
+  reports: {
+    title: 'パフォーマンスレポート',
+    description: '四半期パフォーマンス指標と月次トレンドの表示',
+    quarterlyPerformance: '四半期別パフォーマンス',
+    monthlyTrend: '月次収益トレンド',
+    monthOverMonth: '前月比分析',
+    table: {
+      quarter: '四半期',
+      totalOrders: '総注文数',
+      totalRevenue: '総収益',
+      avgOrderValue: '平均注文額',
+      fulfillmentRate: '注文充足率',
+      month: '月',
+      orders: '注文数',
+      revenue: '収益',
+      change: '変化',
+      growthRate: '成長率'
+    },
+    stats: {
+      totalRevenue: '総収益（年初来）',
+      avgMonthlyRevenue: '月平均収益',
+      totalOrders: '総注文数（年初来）',
+      bestQuarter: '最優秀四半期'
+    }
+  },
+
+  // Restocking
+  restocking: {
+    title: '補充推薦',
+    description: '現在の在庫レベルと需要予測に基づく発注書推薦',
+    belowReorderPoint: '再注文点未満',
+    increasingDemand: '需要増加',
+    totalCandidates: '候補品目数',
+    budgetUtilization: '予算使用率',
+    budgetCeiling: '予算上限',
+    budgetLabel: '予算上限（$）',
+    items: '件',
+    overBudget: '予算超過',
+    table: {
+      title: '推奨発注書',
+      priority: '優先度',
+      name: '品目名',
+      category: 'カテゴリ',
+      onHand: '手持在庫',
+      reorderPoint: '再注文点',
+      demandForecast: '需要予測',
+      qtyToOrder: '発注数量',
+      unitCost: '単価',
+      estCost: '推定費用'
+    },
+    summary: {
+      totalSelected: '選択合計：',
+      of: '/',
+      budget: '予算',
+      overBudget: '予算超過',
+      withinBudget: '予算内'
+    },
+    generatePO: '発注書を生成'
   },
 
   // Filters
