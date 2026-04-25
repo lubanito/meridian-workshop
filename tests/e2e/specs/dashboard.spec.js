@@ -45,14 +45,20 @@ test.describe('Dashboard (Overview)', () => {
   });
 
   test('Reset all filters button enables after applying a filter', async ({ page }) => {
-    await page.selectOption('select', { label: 'January' });
+    // Scope to the Time Period filter explicitly so reordering selects can't
+    // silently target the wrong field.
+    const periodSelect = page.locator('.filter-group').filter({ hasText: 'Time Period' }).locator('select');
+    await periodSelect.selectOption({ label: 'January' });
     await expect(page.getByRole('button', { name: 'Reset all filters' })).toBeEnabled();
   });
 
   test('category filter shows correct options', async ({ page }) => {
-    const categorySelect = page.getByText('Category').locator('..').getByRole('combobox');
+    const categorySelect = page.locator('.filter-group').filter({ hasText: 'Category' }).locator('select');
     await expect(categorySelect).toBeVisible();
-    const options = categorySelect.locator('option');
-    await expect(options).toHaveCount(6); // All + 5 categories
+    // Assert the known options exist by label rather than by total count, so
+    // adding a new category doesn't fail the test for the wrong reason.
+    for (const label of ['All', 'Circuit Boards', 'Sensors', 'Actuators', 'Controllers', 'Power Supplies']) {
+      await expect(categorySelect.locator('option', { hasText: label })).toBeVisible();
+    }
   });
 });

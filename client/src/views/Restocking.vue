@@ -128,7 +128,7 @@
       </div>
 
       <div class="actions-row">
-        <button class="btn-primary" @click="generatePurchaseOrders">
+        <button class="btn-primary" @click="previewDraftPOs">
           {{ t('restocking.generatePO') }}
         </button>
         <span class="draft-hint">{{ t('restocking.draftHint') }}</span>
@@ -184,7 +184,7 @@ export default {
         inventory.value = invData
         demandForecasts.value = demandData
       } catch (err) {
-        error.value = 'Failed to load data. Please try again.'
+        error.value = t('common.errorLoadingData')
         console.error(err)
       } finally {
         loading.value = false
@@ -307,7 +307,7 @@ export default {
     // endpoint expects a backlog_item_id and these recommendations come from
     // inventory + demand, not the backlog — so we keep this in-memory and
     // surface a "not yet submitted" banner.
-    const generatePurchaseOrders = async () => {
+    const previewDraftPOs = async () => {
       const selected = recommendations.value.filter(i => (editedQtys.value[i.sku] ?? 0) > 0)
       if (selected.length === 0) return
       confirmedItems.value = selected.map(i => ({
@@ -339,7 +339,7 @@ export default {
       isOverBudget,
       progressBarWidth,
       overBudgetSkus,
-      generatePurchaseOrders,
+      previewDraftPOs,
       successMessage,
       confirmedItems,
       confirmedTotal

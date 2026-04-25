@@ -381,6 +381,7 @@ export default {
   common: {
     loading: 'Loading...',
     error: 'Error',
+    errorLoadingData: 'Failed to load data. Please try again.',
     noData: 'No data available',
     viewDetails: 'View Details',
     close: 'Close',

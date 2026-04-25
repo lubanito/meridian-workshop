@@ -381,6 +381,7 @@ export default {
   common: {
     loading: '読み込み中...',
     error: 'エラー',
+    errorLoadingData: 'データの読み込みに失敗しました。もう一度お試しください。',
     noData: 'データがありません',
     viewDetails: '詳細を見る',
     close: '閉じる',

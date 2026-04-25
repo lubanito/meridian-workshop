@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Optional
+from typing import List, Literal, Optional
 from pydantic import BaseModel
 from mock_data import inventory_items, orders, demand_forecasts, backlog_items, spending_summary, monthly_spending, category_spending, recent_transactions, purchase_orders, tasks
 
@@ -130,7 +130,7 @@ class Task(BaseModel):
 
 class CreateTaskRequest(BaseModel):
     title: str
-    priority: str = 'medium'
+    priority: Literal['low', 'medium', 'high'] = 'medium'
     due_date: Optional[str] = None
 
 # API endpoints
@@ -256,15 +256,17 @@ def get_quarterly_reports(
     quarters = {}
     for order in filtered_orders:
         order_date = order.get('order_date', '')
-        # Year-agnostic: parse YYYY-MM and bucket into Q1..Q4 of that year
+        # Year-agnostic: parse YYYY-MM and bucket into Q1..Q4 of that year.
+        # Use month_num here — `month` is the function parameter (the
+        # quarter/month filter), and shadowing it would be confusing.
         try:
             year = order_date[:4]
-            month = int(order_date[5:7])
+            month_num = int(order_date[5:7])
         except (ValueError, IndexError):
             continue
-        if not (1 <= month <= 12):
+        if not (1 <= month_num <= 12):
             continue
-        quarter = f'Q{(month - 1) // 3 + 1}-{year}'
+        quarter = f'Q{(month_num - 1) // 3 + 1}-{year}'
 
         if quarter not in quarters:
             quarters[quarter] = {'quarter': quarter, 'total_orders': 0, 'total_revenue': 0, 'delivered_orders': 0, 'avg_order_value': 0}
