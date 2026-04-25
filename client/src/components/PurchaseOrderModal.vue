@@ -31,25 +31,25 @@
             <template v-if="mode === 'create'">
               <div class="form-grid">
                 <div class="form-field">
-                  <label class="form-label">{{ t('purchaseOrder.supplierName') }}</label>
-                  <input v-model="form.supplier_name" type="text" required class="form-input" :placeholder="t('purchaseOrder.supplierPlaceholder')" />
+                  <label for="po-supplier-name" class="form-label">{{ t('purchaseOrder.supplierName') }}</label>
+                  <input id="po-supplier-name" v-model="form.supplier_name" type="text" required class="form-input" :placeholder="t('purchaseOrder.supplierPlaceholder')" />
                 </div>
                 <div class="form-field">
-                  <label class="form-label">{{ t('purchaseOrder.quantity') }}</label>
-                  <input v-model.number="form.quantity" type="number" min="1" required class="form-input" />
+                  <label for="po-quantity" class="form-label">{{ t('purchaseOrder.quantity') }}</label>
+                  <input id="po-quantity" v-model.number="form.quantity" type="number" min="1" required class="form-input" />
                 </div>
                 <div class="form-field">
-                  <label class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
-                  <input v-model.number="form.unit_cost" type="number" min="0" step="0.01" required class="form-input" />
+                  <label for="po-unit-cost" class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
+                  <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" min="0" step="0.01" required class="form-input" />
                 </div>
                 <div class="form-field">
-                  <label class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
-                  <input v-model="form.expected_delivery_date" type="date" :min="todayIso" required class="form-input" />
+                  <label for="po-delivery-date" class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
+                  <input id="po-delivery-date" v-model="form.expected_delivery_date" type="date" :min="todayIso" required class="form-input" />
                 </div>
               </div>
               <div class="form-field full-width">
-                <label class="form-label">{{ t('purchaseOrder.notes') }}</label>
-                <textarea v-model="form.notes" rows="3" class="form-input" :placeholder="t('purchaseOrder.notesPlaceholder')"></textarea>
+                <label for="po-notes" class="form-label">{{ t('purchaseOrder.notes') }}</label>
+                <textarea id="po-notes" v-model="form.notes" rows="3" class="form-input" :placeholder="t('purchaseOrder.notesPlaceholder')"></textarea>
               </div>
               <div v-if="formError" class="form-error">{{ formError }}</div>
             </template>
