@@ -237,7 +237,10 @@ const loadPO = async () => {
   poData.value = null
   try {
     poData.value = await api.getPurchaseOrderByBacklogItem(props.backlogItem.id)
-  } catch {
+  } catch (err) {
+    // Surface a user-friendly message but keep the raw error in the
+    // console so devtools shows the network/stack trace.
+    console.error('[PurchaseOrderModal] loadPO failed:', err)
     poLoadError.value = t('purchaseOrder.loadError')
   } finally {
     poLoading.value = false
@@ -259,6 +262,7 @@ const submit = async () => {
     })
     emit('po-created', created)
   } catch (err) {
+    console.error('[PurchaseOrderModal] submit failed:', err)
     formError.value = err?.response?.data?.detail || t('purchaseOrder.failed')
   } finally {
     submitting.value = false

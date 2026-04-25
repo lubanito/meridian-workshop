@@ -82,7 +82,7 @@
                 </td>
                 <td class="sku-cell">{{ item.sku }}</td>
                 <td>{{ item.name }}</td>
-                <td>{{ item.category }}</td>
+                <td>{{ translateCategory(item.category) }}</td>
                 <td :class="{ 'text-danger': item.quantity_on_hand <= item.reorder_point }">
                   {{ item.quantity_on_hand.toLocaleString() }}
                 </td>
@@ -174,7 +174,7 @@ export default {
   name: 'Restocking',
   setup() {
     const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, formatCurrency } = useI18n()
+    const { t, formatCurrency, translateCategory } = useI18n()
 
     const inventory = ref([])
     const demandForecasts = ref([])
@@ -430,6 +430,7 @@ export default {
     return {
       t,
       formatCurrency,
+      translateCategory,
       loading,
       error,
       budgetCeiling,

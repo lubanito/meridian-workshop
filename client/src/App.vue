@@ -214,7 +214,9 @@ export default {
   --color-text-primary: #e2e8f0;
   --color-text-body: #cbd5e1;
   --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
+  /* Lifted from #64748b → #94a3b8 in dark mode for WCAG AA contrast
+     (4.5:1) against --color-surface #1e293b. Light mode keeps #64748b. */
+  --color-text-muted: #94a3b8;
   --color-border: #334155;
   --color-bg-subtle: #1e293b;
   --color-accent: #2563eb;
@@ -542,6 +544,21 @@ tbody tr:hover {
   background: #dbeafe;
   color: #1e40af;
 }
+
+/* Dark-mode badge overrides — the pastel light-mode backgrounds
+   wash out against --color-surface #1e293b. Tints + lightened
+   text colours keep the same semantic meaning while clearing
+   WCAG AA contrast on dark surfaces. */
+[data-theme="dark"] .badge.success,
+[data-theme="dark"] .badge.increasing { background: rgba(5, 150, 105, 0.18); color: #6ee7b7; }
+[data-theme="dark"] .badge.warning,
+[data-theme="dark"] .badge.medium { background: rgba(217, 119, 6, 0.18); color: #fcd34d; }
+[data-theme="dark"] .badge.danger,
+[data-theme="dark"] .badge.decreasing,
+[data-theme="dark"] .badge.high { background: rgba(220, 38, 38, 0.18); color: #fca5a5; }
+[data-theme="dark"] .badge.info,
+[data-theme="dark"] .badge.low { background: rgba(37, 99, 235, 0.18); color: #93c5fd; }
+[data-theme="dark"] .badge.stable { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; }
 
 .loading,
 .empty-state {
