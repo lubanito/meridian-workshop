@@ -206,6 +206,10 @@ export default {
       successMessage.value = false
       try {
         const filters = getCurrentFilters()
+        // Demand forecasts are global (per-SKU, not per-warehouse), so we
+        // skip the filter pass-through. The inventory filter narrows which
+        // SKUs end up in `recommendations`; the demand map is keyed by SKU
+        // and only the relevant entries are read downstream.
         const [invData, demandData] = await Promise.all([
           api.getInventory(filters),
           api.getDemandForecasts()
@@ -337,6 +341,13 @@ export default {
     // Walk recommendations top-to-bottom; flag any SKU whose cost would push
     // the cumulative total over the ceiling. Skips zero-quantity rows so the
     // running total only advances on real picks.
+    //
+    // This is intentionally NOT a knapsack/bin-packing optimiser — a large
+    // High-priority row that doesn't fit will leave room for smaller
+    // following items, which can look like wasted budget. The buyer
+    // controls the trade-off by editing qty (or zeroing out the oversized
+    // row). totalWithinBudget reflects the sum that *currently* fits given
+    // the user's picks, not a packing-optimal value.
     const overBudgetSkus = computed(() => {
       if (budgetCeiling.value <= 0) return new Set()
       const skus = new Set()
