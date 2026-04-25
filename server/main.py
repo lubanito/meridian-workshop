@@ -30,7 +30,7 @@ def filter_by_month(items: list, month: Optional[str]) -> list:
         # Direct month match — use startswith to avoid '2025-1' matching '2025-10'
         return [item for item in items if item.get('order_date', '').startswith(month)]
 
-    return items
+    return []  # unrecognized quarter string — return empty rather than leaking all records
 
 def apply_filters(items: list, warehouse: Optional[str] = None, category: Optional[str] = None,
                  status: Optional[str] = None) -> list:

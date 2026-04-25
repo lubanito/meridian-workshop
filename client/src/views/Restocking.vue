@@ -73,7 +73,7 @@
               >
                 <td>
                   <span class="badge" :class="item.priority.toLowerCase()">
-                    {{ item.priority }}
+                    {{ t(`priority.${item.priority.toLowerCase()}`) }}
                   </span>
                 </td>
                 <td class="sku-cell">{{ item.sku }}</td>
@@ -284,7 +284,8 @@ export default {
     )
 
     const budgetPercent = computed(() => {
-      if (budgetCeiling.value <= 0) return 0
+      // Use !(> 0) to handle NaN from partially-typed negative input
+      if (!(budgetCeiling.value > 0)) return 0
       return Math.round((totalSelected.value / budgetCeiling.value) * 100)
     })
 

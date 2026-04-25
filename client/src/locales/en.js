@@ -249,8 +249,8 @@ export default {
       withinBudget: 'Within Budget',
       total: 'Total:'
     },
-    generatePO: 'Generate Purchase Orders',
-    successMessage: 'Purchase order draft prepared for review.'
+    generatePO: 'Preview Draft',
+    successMessage: 'Draft purchase orders ready for review — not yet submitted.'
   },
 
   // Filters

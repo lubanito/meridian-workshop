@@ -86,6 +86,8 @@ export default {
     const showProfileDetails = ref(false)
     const showTasks = ref(false)
     const apiTasks = ref([])
+    // Local copy of seed tasks — avoids mutating useAuth-owned state
+    const mockTasks = ref([...(currentUser.value?.tasks ?? [])])
 
     // Dark mode
     const isDark = ref(false)
@@ -105,10 +107,7 @@ export default {
       applyTheme(next)
     }
 
-    // Merge mock tasks from currentUser with API tasks
-    const tasks = computed(() => {
-      return [...currentUser.value.tasks, ...apiTasks.value]
-    })
+    const tasks = computed(() => [...mockTasks.value, ...apiTasks.value])
 
     const loadTasks = async () => {
       try {
@@ -130,17 +129,9 @@ export default {
 
     const deleteTask = async (taskId) => {
       try {
-        // Check if it's a mock task (from currentUser)
-        const isMockTask = currentUser.value.tasks.some(t => t.id === taskId)
-
-        if (isMockTask) {
-          // Remove from mock tasks
-          const index = currentUser.value.tasks.findIndex(t => t.id === taskId)
-          if (index !== -1) {
-            currentUser.value.tasks.splice(index, 1)
-          }
+        if (mockTasks.value.some(t => t.id === taskId)) {
+          mockTasks.value = mockTasks.value.filter(t => t.id !== taskId)
         } else {
-          // Remove from API tasks
           await api.deleteTask(taskId)
           apiTasks.value = apiTasks.value.filter(t => t.id !== taskId)
         }
@@ -151,19 +142,14 @@ export default {
 
     const toggleTask = async (taskId) => {
       try {
-        // Check if it's a mock task (from currentUser)
-        const mockTask = currentUser.value.tasks.find(t => t.id === taskId)
-
-        if (mockTask) {
-          // Toggle mock task status
-          mockTask.status = mockTask.status === 'pending' ? 'completed' : 'pending'
+        if (mockTasks.value.some(t => t.id === taskId)) {
+          mockTasks.value = mockTasks.value.map(t =>
+            t.id === taskId ? { ...t, status: t.status === 'pending' ? 'completed' : 'pending' } : t
+          )
         } else {
-          // Toggle API task
           const updatedTask = await api.toggleTask(taskId)
           const index = apiTasks.value.findIndex(t => t.id === taskId)
-          if (index !== -1) {
-            apiTasks.value[index] = updatedTask
-          }
+          if (index !== -1) apiTasks.value[index] = updatedTask
         }
       } catch (err) {
         console.error('Failed to toggle task:', err)

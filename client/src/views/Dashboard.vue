@@ -301,7 +301,6 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
-import { formatCurrency } from '../utils/currency'
 import ProductDetailModal from '../components/ProductDetailModal.vue'
 import BacklogDetailModal from '../components/BacklogDetailModal.vue'
 import PurchaseOrderModal from '../components/PurchaseOrderModal.vue'
@@ -314,7 +313,14 @@ export default {
     PurchaseOrderModal,
   },
   setup() {
-    const { t, currentCurrency, translateProductName, translateWarehouse } = useI18n()
+    const { t, currentLocale, currentCurrency, translateProductName, translateWarehouse } = useI18n()
+
+    const formatCurrency = (num) => Number(num).toLocaleString(currentLocale.value, {
+      style: 'currency',
+      currency: currentCurrency.value,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
     const loading = ref(true)
     const error = ref(null)
     const summary = ref({})
@@ -561,26 +567,30 @@ export default {
       return allBacklogItems.value.filter(b => validSkus.has(b.item_sku))
     })
 
-    const loadData = async () => {
-      try {
-        loading.value = true
-        const filters = getCurrentFilters()
+    let loadId = 0
 
+    const loadData = async () => {
+      const currentId = ++loadId
+      loading.value = true
+      try {
+        const filters = getCurrentFilters()
         const [summaryData, ordersData, inventoryData, backlogData] = await Promise.all([
           api.getDashboardSummary(filters),
           api.getOrders(filters),
           api.getInventory(filters),
           api.getBacklog()
         ])
-
+        if (currentId !== loadId) return
         summary.value = summaryData
         allOrders.value = ordersData
         inventoryItems.value = inventoryData
         allBacklogItems.value = backlogData
+        error.value = null
       } catch (err) {
+        if (currentId !== loadId) return
         error.value = 'Failed to load dashboard data: ' + err.message
       } finally {
-        loading.value = false
+        if (currentId === loadId) loading.value = false
       }
     }
 
@@ -595,7 +605,8 @@ export default {
     })
 
     const getCircleSegment = (value) => {
-      return totalOrders.value > 0 ? (value / totalOrders.value) * 440 : 0
+      // circumference = 2 * π * r = 2 * π * 65 ≈ 408
+      return totalOrders.value > 0 ? (value / totalOrders.value) * 408 : 0
     }
 
     const getStockBadge = (level) => {
@@ -637,9 +648,9 @@ export default {
 
     const formatDate = (dateString) => {
       if (!dateString) return '-'
-      const { currentLocale } = useI18n()
-      const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
       const date = new Date(dateString)
+      if (isNaN(date.getTime())) return '-'
+      const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
       return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
     }
 

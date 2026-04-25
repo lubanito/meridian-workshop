@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, readonly } from 'vue'
 import en from '../locales/en'
 import ja from '../locales/ja'
 
@@ -118,7 +118,7 @@ export function useI18n() {
   return {
     t,
     setLocale,
-    currentLocale: computed(() => currentLocale.value),
+    currentLocale: readonly(currentLocale),
     currentCurrency,
     availableLocales,
     localeName,
