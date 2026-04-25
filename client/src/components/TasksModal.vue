@@ -64,13 +64,13 @@
             <div class="tasks-divider"></div>
 
             <!-- Tasks List -->
-            <div v-if="sortedTasks.length === 0" class="no-tasks">
+            <div v-if="tasks.length === 0" class="no-tasks">
               {{ t('tasks.noTasks') }}
             </div>
 
             <div v-else class="tasks-list">
               <div
-                v-for="task in sortedTasks"
+                v-for="task in tasks"
                 :key="task.id"
                 class="task-item"
                 :class="[`priority-${task.priority}`, { completed: task.status === 'completed' }]"
@@ -119,7 +119,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from '../composables/useI18n'
 
 export default {
@@ -142,9 +142,6 @@ export default {
       priority: 'medium',
       dueDate: ''
     })
-
-    // No sort: render in the order the parent provides (newest first).
-    const sortedTasks = computed(() => props.tasks)
 
     const close = () => {
       emit('close')
@@ -234,7 +231,6 @@ export default {
     return {
       t,
       newTask,
-      sortedTasks,
       close,
       handleAddTask,
       formatDueDate,

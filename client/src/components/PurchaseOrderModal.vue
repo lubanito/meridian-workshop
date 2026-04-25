@@ -3,6 +3,7 @@
     <Transition name="modal">
       <div v-if="isOpen && backlogItem" class="modal-overlay" @click="$emit('close')">
         <div
+          ref="dialogRef"
           class="modal-container"
           role="dialog"
           aria-modal="true"
@@ -131,6 +132,10 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'po-created'])
 
+// Template ref to *this* modal's dialog div, so the focus-trap can't
+// pick the wrong dialog when multiple modals are open simultaneously.
+const dialogRef = ref(null)
+
 // Selector for "focusable" descendants when trapping Tab inside the modal.
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -144,8 +149,7 @@ const onKeydown = (e) => {
     return
   }
   if (e.key !== 'Tab') return
-  // Find focusables inside the dialog's role="dialog" container.
-  const dialog = document.querySelector('.modal-container[aria-modal="true"]')
+  const dialog = dialogRef.value
   if (!dialog) return
   const focusables = dialog.querySelectorAll(FOCUSABLE)
   if (focusables.length === 0) return
@@ -216,8 +220,7 @@ watch(() => props.isOpen, async (open) => {
     // Move focus into the dialog after it mounts so the focus-trap
     // tab cycle has somewhere to start, and keyboard users land inside.
     await nextTick()
-    const dialog = document.querySelector('.modal-container[aria-modal="true"]')
-    const firstFocusable = dialog?.querySelector(FOCUSABLE)
+    const firstFocusable = dialogRef.value?.querySelector(FOCUSABLE)
     firstFocusable?.focus()
   } else {
     document.removeEventListener('keydown', onKeydown)

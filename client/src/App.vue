@@ -154,7 +154,13 @@ export default {
         } else {
           const updatedTask = await api.toggleTask(taskId)
           const index = apiTasks.value.findIndex(t => t.id === taskId)
-          if (index !== -1) apiTasks.value[index] = updatedTask
+          if (index !== -1) {
+            // Replace the array reference so consumers shallow-watching
+            // apiTasks (e.g. the tasks computed) re-evaluate.
+            const next = [...apiTasks.value]
+            next[index] = updatedTask
+            apiTasks.value = next
+          }
         }
       } catch (err) {
         console.error('Failed to toggle task:', err)

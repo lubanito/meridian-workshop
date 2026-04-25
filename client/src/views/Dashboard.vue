@@ -345,12 +345,13 @@ export default {
     const fillRate = ref(96.8)
 
     const revenueGoal = computed(() => {
-      // $800K per month, so if looking at all months (12 months), goal is 12 * 800K = 9.6M
+      // $800K per month — scale by the period in view so the KPI card's
+      // attainment % is comparable to the displayed revenue.
       const monthlyGoal = 800000
-      if (selectedPeriod.value === 'all') {
-        return monthlyGoal * 12 // $9,600,000 for the full year
-      }
-      return monthlyGoal // $800,000 for a single month
+      if (selectedPeriod.value === 'all') return monthlyGoal * 12
+      // Q1-2025, Q2-2025, etc. — three months per quarter
+      if (/^Q[1-4]-\d{4}$/.test(selectedPeriod.value)) return monthlyGoal * 3
+      return monthlyGoal
     })
 
     const statusData = computed(() => {

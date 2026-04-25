@@ -6,18 +6,18 @@
           <label>{{ t('filters.timePeriod') }}</label>
           <select v-model="selectedPeriod" class="filter-select">
             <option value="all">{{ t('filters.allMonths') }}</option>
-            <option value="2025-01">{{ t('months.january') }}</option>
-            <option value="2025-02">{{ t('months.february') }}</option>
-            <option value="2025-03">{{ t('months.march') }}</option>
-            <option value="2025-04">{{ t('months.april') }}</option>
-            <option value="2025-05">{{ t('months.may') }}</option>
-            <option value="2025-06">{{ t('months.june') }}</option>
-            <option value="2025-07">{{ t('months.july') }}</option>
-            <option value="2025-08">{{ t('months.august') }}</option>
-            <option value="2025-09">{{ t('months.september') }}</option>
-            <option value="2025-10">{{ t('months.october') }}</option>
-            <option value="2025-11">{{ t('months.november') }}</option>
-            <option value="2025-12">{{ t('months.december') }}</option>
+            <option value="2025-01">{{ t('months.january') }} 2025</option>
+            <option value="2025-02">{{ t('months.february') }} 2025</option>
+            <option value="2025-03">{{ t('months.march') }} 2025</option>
+            <option value="2025-04">{{ t('months.april') }} 2025</option>
+            <option value="2025-05">{{ t('months.may') }} 2025</option>
+            <option value="2025-06">{{ t('months.june') }} 2025</option>
+            <option value="2025-07">{{ t('months.july') }} 2025</option>
+            <option value="2025-08">{{ t('months.august') }} 2025</option>
+            <option value="2025-09">{{ t('months.september') }} 2025</option>
+            <option value="2025-10">{{ t('months.october') }} 2025</option>
+            <option value="2025-11">{{ t('months.november') }} 2025</option>
+            <option value="2025-12">{{ t('months.december') }} 2025</option>
           </select>
         </div>
 

@@ -48,7 +48,7 @@ test.describe('Dashboard (Overview)', () => {
     // Scope to the Time Period filter explicitly so reordering selects can't
     // silently target the wrong field.
     const periodSelect = page.locator('.filter-group').filter({ hasText: 'Time Period' }).locator('select');
-    await periodSelect.selectOption({ label: 'January' });
+    await periodSelect.selectOption({ label: 'January 2025' });
     await expect(page.getByRole('button', { name: 'Reset all filters' })).toBeEnabled();
   });
 

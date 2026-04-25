@@ -110,7 +110,7 @@ export default {
         const fetchedOrders = await api.getOrders(filters)
 
         // Sort orders by order_date (earliest first)
-        orders.value = fetchedOrders.sort((a, b) => {
+        orders.value = fetchedOrders.slice().sort((a, b) => {
           const dateA = new Date(a.order_date)
           const dateB = new Date(b.order_date)
           return dateA - dateB
