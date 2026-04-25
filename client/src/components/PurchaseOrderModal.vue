@@ -4,7 +4,7 @@
       <div v-if="isOpen && backlogItem" class="modal-overlay" @click="$emit('close')">
         <div class="modal-container" @click.stop>
           <div class="modal-header">
-            <h3 class="modal-title">{{ mode === 'create' ? 'Create Purchase Order' : 'Purchase Order Details' }}</h3>
+            <h3 class="modal-title">{{ mode === 'create' ? t('purchaseOrder.createTitle') : t('purchaseOrder.viewTitle') }}</h3>
             <button class="close-button" @click="$emit('close')">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -17,78 +17,78 @@
               <div class="item-name">{{ backlogItem.item_name }}</div>
               <div class="item-meta">
                 <span class="sku">{{ backlogItem.item_sku }}</span>
-                <span class="shortage">Shortage: {{ shortage }} units</span>
+                <span class="shortage">{{ t('purchaseOrder.shortage') }}: {{ shortage }} {{ t('purchaseOrder.units') }}</span>
               </div>
             </div>
 
             <template v-if="mode === 'create'">
               <div class="form-grid">
                 <div class="form-field">
-                  <label class="form-label">Supplier Name</label>
-                  <input v-model="form.supplier_name" type="text" class="form-input" placeholder="Enter supplier name" />
+                  <label class="form-label">{{ t('purchaseOrder.supplierName') }}</label>
+                  <input v-model="form.supplier_name" type="text" class="form-input" :placeholder="t('purchaseOrder.supplierPlaceholder')" />
                 </div>
                 <div class="form-field">
-                  <label class="form-label">Quantity</label>
+                  <label class="form-label">{{ t('purchaseOrder.quantity') }}</label>
                   <input v-model.number="form.quantity" type="number" min="1" class="form-input" />
                 </div>
                 <div class="form-field">
-                  <label class="form-label">Unit Cost ($)</label>
+                  <label class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
                   <input v-model.number="form.unit_cost" type="number" min="0" step="0.01" class="form-input" />
                 </div>
                 <div class="form-field">
-                  <label class="form-label">Expected Delivery Date</label>
+                  <label class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
                   <input v-model="form.expected_delivery_date" type="date" class="form-input" />
                 </div>
               </div>
               <div class="form-field full-width">
-                <label class="form-label">Notes (optional)</label>
-                <textarea v-model="form.notes" rows="3" class="form-input" placeholder="Additional notes..."></textarea>
+                <label class="form-label">{{ t('purchaseOrder.notes') }}</label>
+                <textarea v-model="form.notes" rows="3" class="form-input" :placeholder="t('purchaseOrder.notesPlaceholder')"></textarea>
               </div>
               <div v-if="formError" class="form-error">{{ formError }}</div>
             </template>
 
             <template v-else>
-              <div v-if="poLoading" class="loading-state">Loading purchase order...</div>
+              <div v-if="poLoading" class="loading-state">{{ t('purchaseOrder.loading') }}</div>
               <div v-else-if="poLoadError" class="error-state">{{ poLoadError }}</div>
               <div v-else-if="poData" class="po-details">
                 <div class="detail-grid">
                   <div class="detail-item">
-                    <div class="detail-label">PO ID</div>
+                    <div class="detail-label">{{ t('purchaseOrder.poId') }}</div>
                     <div class="detail-value mono">{{ poData.id }}</div>
                   </div>
                   <div class="detail-item">
-                    <div class="detail-label">Supplier</div>
+                    <div class="detail-label">{{ t('purchaseOrder.supplier') }}</div>
                     <div class="detail-value">{{ poData.supplier_name }}</div>
                   </div>
                   <div class="detail-item">
-                    <div class="detail-label">Quantity</div>
-                    <div class="detail-value">{{ poData.quantity }} units</div>
+                    <div class="detail-label">{{ t('purchaseOrder.quantity') }}</div>
+                    <div class="detail-value">{{ poData.quantity }} {{ t('purchaseOrder.units') }}</div>
                   </div>
                   <div class="detail-item">
-                    <div class="detail-label">Unit Cost</div>
-                    <div class="detail-value">${{ poData.unit_cost.toFixed(2) }}</div>
+                    <div class="detail-label">{{ t('purchaseOrder.unitCost') }}</div>
+                    <div class="detail-value">{{ formatCurrency(poData.unit_cost) }}</div>
                   </div>
                   <div class="detail-item">
-                    <div class="detail-label">Total Cost</div>
-                    <div class="detail-value">${{ (poData.quantity * poData.unit_cost).toLocaleString('en-US', { minimumFractionDigits: 2 }) }}</div>
+                    <div class="detail-label">{{ t('purchaseOrder.totalCost') }}</div>
+                    <div class="detail-value">{{ formatCurrency(poData.quantity * poData.unit_cost) }}</div>
                   </div>
                   <div class="detail-item">
-                    <div class="detail-label">Expected Delivery</div>
+                    <div class="detail-label">{{ t('purchaseOrder.expectedDelivery') }}</div>
                     <div class="detail-value">{{ poData.expected_delivery_date }}</div>
                   </div>
                   <div class="detail-item">
-                    <div class="detail-label">Status</div>
+                    <div class="detail-label">{{ t('purchaseOrder.status') }}</div>
                     <div class="detail-value">
                       <span class="badge" :class="poData.status.toLowerCase()">{{ poData.status }}</span>
                     </div>
                   </div>
                   <div class="detail-item">
-                    <div class="detail-label">Created</div>
+                    <div class="detail-label">{{ t('purchaseOrder.created') }}</div>
                     <div class="detail-value">{{ poData.created_date }}</div>
                   </div>
                 </div>
                 <div v-if="poData.notes" class="po-notes">
-                  <div class="detail-label">Notes</div>
+                  <div class="detail-label">{{ t('purchaseOrder.notesLabel') }}</div>
                   <div class="notes-text">{{ poData.notes }}</div>
                 </div>
               </div>
@@ -96,14 +96,14 @@
           </div>
 
           <div class="modal-footer">
-            <button class="btn-secondary" @click="$emit('close')">Close</button>
+            <button class="btn-secondary" @click="$emit('close')">{{ t('common.close') }}</button>
             <button
               v-if="mode === 'create'"
               class="btn-primary"
               :disabled="submitting || !isFormValid"
               @click="submit"
             >
-              {{ submitting ? 'Creating...' : 'Create Order' }}
+              {{ submitting ? t('purchaseOrder.creating') : t('purchaseOrder.createOrder') }}
             </button>
           </div>
         </div>
@@ -115,6 +115,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { api } from '../api'
+import { useI18n } from '../composables/useI18n'
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -123,6 +124,15 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'po-created'])
+
+const { t, currentLocale, currentCurrency } = useI18n()
+
+const formatCurrency = (num) => Number(num).toLocaleString(currentLocale.value, {
+  style: 'currency',
+  currency: currentCurrency.value,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+})
 
 const shortage = computed(() => {
   if (!props.backlogItem) return 0
@@ -173,7 +183,7 @@ const loadPO = async () => {
   try {
     poData.value = await api.getPurchaseOrderByBacklogItem(props.backlogItem.id)
   } catch {
-    poLoadError.value = 'Could not load purchase order details.'
+    poLoadError.value = t('purchaseOrder.loadError')
   } finally {
     poLoading.value = false
   }
@@ -194,7 +204,7 @@ const submit = async () => {
     })
     emit('po-created', created)
   } catch (err) {
-    formError.value = err?.response?.data?.detail || 'Failed to create purchase order.'
+    formError.value = err?.response?.data?.detail || t('purchaseOrder.failed')
   } finally {
     submitting.value = false
   }

@@ -22,15 +22,13 @@ def filter_by_month(items: list, month: Optional[str]) -> list:
         return items
 
     if month.startswith('Q'):
-        # Handle quarters
-        if month in QUARTER_MAP:
-            months = QUARTER_MAP[month]
-            return [item for item in items if any(m in item.get('order_date', '') for m in months)]
+        quarter_months = QUARTER_MAP.get(month)
+        if not quarter_months:
+            return []  # unrecognized quarter — return empty rather than leaking all records
+        return [item for item in items if any(item.get('order_date', '').startswith(m) for m in quarter_months)]
     else:
         # Direct month match — use startswith to avoid '2025-1' matching '2025-10'
         return [item for item in items if item.get('order_date', '').startswith(month)]
-
-    return []  # unrecognized quarter string — return empty rather than leaking all records
 
 def apply_filters(items: list, warehouse: Optional[str] = None, category: Optional[str] = None,
                  status: Optional[str] = None) -> list:
@@ -325,7 +323,7 @@ def get_tasks():
 def create_task(req: CreateTaskRequest):
     """Create a new task"""
     task = {
-        "id": f"task-{str(uuid.uuid4())[:8]}",
+        "id": f"task-{uuid.uuid4()}",
         "title": req.title,
         "priority": req.priority,
         "due_date": req.due_date,
@@ -359,7 +357,7 @@ def create_purchase_order(req: CreatePurchaseOrderRequest):
     if not backlog:
         raise HTTPException(status_code=404, detail=f"Backlog item {req.backlog_item_id} not found")
     po = {
-        "id": f"PO-{str(uuid.uuid4())[:8].upper()}",
+        "id": f"PO-{uuid.uuid4()}",
         "backlog_item_id": req.backlog_item_id,
         "supplier_name": req.supplier_name,
         "quantity": req.quantity,
@@ -374,7 +372,9 @@ def create_purchase_order(req: CreatePurchaseOrderRequest):
 
 @app.get("/api/purchase-orders/{backlog_item_id}", response_model=PurchaseOrder)
 def get_purchase_order_by_backlog_item(backlog_item_id: str):
-    """Get purchase order for a specific backlog item"""
+    """Get the most recent purchase order for a specific backlog item.
+    Note: returns only the first match; if multiple POs exist for the same backlog item
+    this endpoint would need to return a list instead."""
     po = next((p for p in purchase_orders if p["backlog_item_id"] == backlog_item_id), None)
     if not po:
         raise HTTPException(status_code=404, detail=f"No purchase order found for backlog item {backlog_item_id}")

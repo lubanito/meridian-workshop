@@ -391,6 +391,32 @@ export default {
     items: '件'
   },
 
+  // Purchase Order Modal
+  purchaseOrder: {
+    createTitle: '発注書を作成',
+    viewTitle: '発注書の詳細',
+    shortage: '不足',
+    units: '単位',
+    supplierName: '仕入先名',
+    supplierPlaceholder: '仕入先名を入力',
+    quantity: '数量',
+    unitCost: '単価',
+    expectedDelivery: '納期予定日',
+    notes: '備考（任意）',
+    notesPlaceholder: '追加メモ...',
+    loading: '発注書を読み込み中...',
+    loadError: '発注書の詳細を読み込めませんでした。',
+    poId: '発注書番号',
+    supplier: '仕入先',
+    totalCost: '合計費用',
+    status: 'ステータス',
+    created: '作成日',
+    notesLabel: '備考',
+    creating: '作成中...',
+    createOrder: '注文を作成',
+    failed: '発注書の作成に失敗しました。'
+  },
+
   // Product Names
   productNames: {
     'Single Layer PCB Assembly': '単層PCB組立',

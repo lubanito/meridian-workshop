@@ -389,5 +389,31 @@ export default {
     filter: 'Filter',
     export: 'Export',
     items: 'items'
+  },
+
+  // Purchase Order Modal
+  purchaseOrder: {
+    createTitle: 'Create Purchase Order',
+    viewTitle: 'Purchase Order Details',
+    shortage: 'Shortage',
+    units: 'units',
+    supplierName: 'Supplier Name',
+    supplierPlaceholder: 'Enter supplier name',
+    quantity: 'Quantity',
+    unitCost: 'Unit Cost',
+    expectedDelivery: 'Expected Delivery Date',
+    notes: 'Notes (optional)',
+    notesPlaceholder: 'Additional notes...',
+    loading: 'Loading purchase order...',
+    loadError: 'Could not load purchase order details.',
+    poId: 'PO ID',
+    supplier: 'Supplier',
+    totalCost: 'Total Cost',
+    status: 'Status',
+    created: 'Created',
+    notesLabel: 'Notes',
+    creating: 'Creating...',
+    createOrder: 'Create Order',
+    failed: 'Failed to create purchase order.'
   }
 }
