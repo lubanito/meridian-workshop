@@ -129,13 +129,6 @@ const emit = defineEmits(['close', 'po-created'])
 // A document-level listener works regardless of which element has focus,
 // which matters because Teleport renders the overlay outside this component.
 const onEscape = (e) => { if (e.key === 'Escape') emit('close') }
-watch(() => props.isOpen, (open) => {
-  if (open) document.addEventListener('keydown', onEscape)
-  else document.removeEventListener('keydown', onEscape)
-})
-// Belt-and-suspenders: if the component is destroyed while still open
-// (e.g. parent route changes mid-modal), make sure the listener is gone.
-onUnmounted(() => document.removeEventListener('keydown', onEscape))
 
 const { t, formatCurrency } = useI18n()
 
@@ -167,21 +160,31 @@ const poData = ref(null)
 const poLoading = ref(false)
 const poLoadError = ref('')
 
+// Single watch handles both the keyboard-listener lifecycle and the
+// open-time form/PO setup, so the two concerns can't diverge.
 watch(() => props.isOpen, (open) => {
-  if (!open) return
-  if (props.mode === 'create') {
-    form.value = {
-      supplier_name: '',
-      quantity: shortage.value,
-      unit_cost: 0,
-      expected_delivery_date: '',
-      notes: ''
+  if (open) {
+    document.addEventListener('keydown', onEscape)
+    if (props.mode === 'create') {
+      form.value = {
+        supplier_name: '',
+        quantity: shortage.value,
+        unit_cost: 0,
+        expected_delivery_date: '',
+        notes: ''
+      }
+      formError.value = ''
+    } else {
+      loadPO()
     }
-    formError.value = ''
   } else {
-    loadPO()
+    document.removeEventListener('keydown', onEscape)
   }
 })
+
+// Belt-and-suspenders: if the component is destroyed while still open
+// (e.g. parent route changes mid-modal), make sure the listener is gone.
+onUnmounted(() => document.removeEventListener('keydown', onEscape))
 
 const loadPO = async () => {
   poLoading.value = true

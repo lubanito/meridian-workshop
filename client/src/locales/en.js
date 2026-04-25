@@ -257,6 +257,7 @@ export default {
     },
     generatePO: 'Preview Draft',
     draftHint: 'Builds an in-app preview only — no orders are submitted to suppliers.',
+    noItemsSelected: 'Set a quantity above zero on at least one row to preview a draft.',
     noRecommendations: 'No restocking recommendations — every SKU is at or above its reorder point and demand is steady.',
     successMessage: 'Draft purchase orders ready for review — not yet submitted.'
   },

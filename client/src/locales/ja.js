@@ -257,6 +257,7 @@ export default {
     },
     generatePO: 'ドラフトをプレビュー',
     draftHint: 'アプリ内プレビューのみ — 仕入先への発注は送信されません。',
+    noItemsSelected: 'ドラフトを表示するには、少なくとも1行で数量を1以上に設定してください。',
     noRecommendations: '補充推薦はありません — すべてのSKUが再注文点以上であり、需要は安定しています。',
     successMessage: '発注書草案を確認用に準備しました（まだ送信されていません）。'
   },

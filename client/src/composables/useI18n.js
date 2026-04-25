@@ -26,6 +26,17 @@ const currentCurrency = computed(() => {
 // Bare-language → BCP 47 tag, used for Intl APIs that need an unambiguous region
 const BCP47_TAGS = { en: 'en-US', ja: 'ja-JP' }
 
+// English category label -> i18n key. Module-scoped so it isn't reallocated
+// on every useI18n() call. Centralised so Dashboard, Inventory, and
+// Spending can't drift from each other.
+const CATEGORY_KEYS = {
+  'Circuit Boards': 'categories.circuitBoards',
+  'Sensors': 'categories.sensors',
+  'Actuators': 'categories.actuators',
+  'Controllers': 'categories.controllers',
+  'Power Supplies': 'categories.powerSupplies'
+}
+
 export function useI18n() {
   const t = (key, params = {}) => {
     const keys = key.split('.')
@@ -96,15 +107,6 @@ export function useI18n() {
       currency: currentCurrency.value
     })
 
-  // English category label -> i18n key. Centralised so Dashboard,
-  // Inventory, and Spending can't drift from each other.
-  const CATEGORY_KEYS = {
-    'Circuit Boards': 'categories.circuitBoards',
-    'Sensors': 'categories.sensors',
-    'Actuators': 'categories.actuators',
-    'Controllers': 'categories.controllers',
-    'Power Supplies': 'categories.powerSupplies'
-  }
   const translateCategory = (category) =>
     CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category]) : category
 

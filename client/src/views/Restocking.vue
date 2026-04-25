@@ -141,6 +141,10 @@
         <span class="draft-hint">{{ t('restocking.draftHint') }}</span>
       </div>
 
+      <div v-if="emptySelectionNotice" class="empty-selection-notice">
+        {{ t('restocking.noItemsSelected') }}
+      </div>
+
       <div v-if="successMessage" ref="successAlertRef" class="success-alert">
         <strong>{{ t('restocking.successMessage') }}</strong>
         <ul>
@@ -189,6 +193,7 @@ export default {
       if (Number.isNaN(val) || val < 0) budgetCeiling.value = 0
     })
     const successMessage = ref(false)
+    const emptySelectionNotice = ref(false)
     const confirmedItems = ref([])
     const confirmedTotal = ref(0)
     const successAlertRef = ref(null)
@@ -364,7 +369,16 @@ export default {
       // Walk sortedRecommendations so the draft summary matches the table
       // order the buyer is looking at, not the raw inventory order.
       const selected = sortedRecommendations.value.filter(i => (editedQtys.value[i.sku] ?? 0) > 0)
-      if (selected.length === 0) return
+      if (selected.length === 0) {
+        // Surface a transient inline notice instead of a silent no-op so
+        // a user who's zeroed everything out gets feedback.
+        emptySelectionNotice.value = true
+        successMessage.value = false
+        await nextTick()
+        setTimeout(() => { emptySelectionNotice.value = false }, 3500)
+        return
+      }
+      emptySelectionNotice.value = false
       confirmedItems.value = selected.map(i => ({
         ...i,
         qty_to_order: editedQtys.value[i.sku] ?? 0
@@ -399,6 +413,7 @@ export default {
       overBudgetSkus,
       previewDraftPOs,
       successMessage,
+      emptySelectionNotice,
       successAlertRef,
       confirmedItems,
       confirmedTotal
@@ -548,6 +563,17 @@ export default {
   font-size: 0.813rem;
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.empty-selection-notice {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  color: var(--color-text-body);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
 }
 
 .btn-primary {
