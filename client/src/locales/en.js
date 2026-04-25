@@ -268,7 +268,8 @@ export default {
     category: 'Category',
     orderStatus: 'Order Status',
     all: 'All',
-    allMonths: 'All Months'
+    allMonths: 'All Months',
+    resetAll: 'Reset all filters'
   },
 
   // Statuses

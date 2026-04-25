@@ -179,11 +179,15 @@ export default {
     const budgetCeiling = ref(DEFAULT_BUDGET)
 
     // The number input's `min="0"` is a hint, not a constraint — users can
-    // still type "-100". Normalise on blur so a stray negative or NaN can't
-    // poison the budget calc.
+    // still type "-100", and v-model.number leaves the ref as NaN while
+    // the input is mid-edit. Normalise eagerly so downstream computeds
+    // (overBudgetSkus, budgetPercent) never see NaN or negatives.
     const normalizeBudget = () => {
       if (!(budgetCeiling.value > 0)) budgetCeiling.value = 0
     }
+    watch(budgetCeiling, (val) => {
+      if (Number.isNaN(val) || val < 0) budgetCeiling.value = 0
+    })
     const successMessage = ref(false)
     const confirmedItems = ref([])
     const confirmedTotal = ref(0)
@@ -202,9 +206,8 @@ export default {
         ])
         inventory.value = invData
         demandForecasts.value = demandData
-      } catch (err) {
+      } catch {
         error.value = t('common.errorLoadingData')
-        console.error(err)
       } finally {
         loading.value = false
       }

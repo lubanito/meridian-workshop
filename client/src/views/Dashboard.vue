@@ -315,7 +315,7 @@ export default {
     PurchaseOrderModal,
   },
   setup() {
-    const { t, currentLocale, currentCurrency, formatCurrency, translateProductName, translateWarehouse } = useI18n()
+    const { t, currentLocale, currentCurrency, formatCurrency, translateCategory, translateProductName, translateWarehouse } = useI18n()
     const loading = ref(true)
     const error = ref(null)
     const summary = ref({})
@@ -619,17 +619,6 @@ export default {
       return 'danger'
     }
 
-    const translateCategory = (category) => {
-      const categoryMap = {
-        'Circuit Boards': t('categories.circuitBoards'),
-        'Sensors': t('categories.sensors'),
-        'Actuators': t('categories.actuators'),
-        'Controllers': t('categories.controllers'),
-        'Power Supplies': t('categories.powerSupplies')
-      }
-      return categoryMap[category] || category
-    }
-
     const translateStockLevel = (stockLevel) => {
       const stockMap = {
         'In Stock': t('status.inStock'),
@@ -683,12 +672,17 @@ export default {
     const handlePOCreated = (poData) => {
       const idx = allBacklogItems.value.findIndex(b => b.id === poData.backlog_item_id)
       if (idx !== -1) {
-        allBacklogItems.value[idx] = {
-          ...allBacklogItems.value[idx],
+        // Replace the whole array rather than assigning by index — makes the
+        // mutation explicit and grep-able, and keeps consumers that only
+        // shallow-watch the ref reacting reliably.
+        const updated = [...allBacklogItems.value]
+        updated[idx] = {
+          ...updated[idx],
           purchase_order_id: poData.id,
           purchase_order: poData,
           has_purchase_order: true
         }
+        allBacklogItems.value = updated
       }
       showPOModal.value = false
     }

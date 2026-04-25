@@ -396,11 +396,17 @@ def create_purchase_order(req: CreatePurchaseOrderRequest):
     purchase_orders.append(po)
     return po
 
-@app.get("/api/purchase-orders/{backlog_item_id}", response_model=PurchaseOrder)
-def get_purchase_order_by_backlog_item(backlog_item_id: str):
-    """Get the most recent purchase order for a specific backlog item.
-    Note: returns only the first match; if multiple POs exist for the same backlog item
-    this endpoint would need to return a list instead."""
+@app.get("/api/backlog/{backlog_item_id}/purchase-order", response_model=PurchaseOrder)
+def get_purchase_order_for_backlog_item(backlog_item_id: str):
+    """Get the purchase order for a specific backlog item.
+
+    Path is nested under /api/backlog/{id}/... rather than
+    /api/purchase-orders/{id} so the route key matches the resource it
+    addresses (backlog item) and a future GET /api/purchase-orders/{po_id}
+    by PO id won't collide with this one.
+
+    Returns the first match; the create endpoint enforces one PO per
+    backlog item via a 409, so this stays single-valued in normal use."""
     po = next((p for p in purchase_orders if p["backlog_item_id"] == backlog_item_id), None)
     if not po:
         raise HTTPException(status_code=404, detail=f"No purchase order found for backlog item {backlog_item_id}")

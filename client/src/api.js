@@ -138,10 +138,11 @@ export const api = {
   },
 
   async getPurchaseOrderByBacklogItem(backlogItemId) {
-    // The server returns the first matching PO; the create endpoint enforces
-    // one-PO-per-backlog-item via a 409 guard, so this stays consistent in
-    // normal usage. Bulk-imported data could violate that invariant.
-    const response = await axios.get(`${API_BASE_URL}/purchase-orders/${backlogItemId}`)
+    // Nested under /api/backlog/{id}/purchase-order so the path matches
+    // the resource we're addressing. The server enforces one-PO-per-
+    // backlog-item via a 409 at create time, so this stays single-valued
+    // in normal usage; bulk-imported data could violate that invariant.
+    const response = await axios.get(`${API_BASE_URL}/backlog/${backlogItemId}/purchase-order`)
     return response.data
   }
 }
