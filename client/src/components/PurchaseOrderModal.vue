@@ -162,9 +162,10 @@ const onKeydown = (e) => {
 
 const { t, formatCurrency } = useI18n()
 
-// Local-date YYYY-MM-DD for the date-input `min` attribute, so a buyer
-// can't pick a delivery date in the past.
-const todayIso = new Date().toISOString().slice(0, 10)
+// YYYY-MM-DD for the date-input `min` attribute. Recomputed each time
+// the modal opens so a session that's been idle past midnight doesn't
+// keep yesterday as the floor.
+const todayIso = ref(new Date().toISOString().slice(0, 10))
 
 const shortage = computed(() => {
   if (!props.backlogItem) return 0
@@ -199,6 +200,7 @@ const poLoadError = ref('')
 watch(() => props.isOpen, async (open) => {
   if (open) {
     document.addEventListener('keydown', onKeydown)
+    todayIso.value = new Date().toISOString().slice(0, 10)
     if (props.mode === 'create') {
       form.value = {
         supplier_name: '',
@@ -327,7 +329,7 @@ const submit = async () => {
   background: var(--color-bg-subtle);
   border-radius: 8px;
   padding: 1rem;
-  border-left: 3px solid #3b82f6;
+  border-left: 3px solid var(--color-accent);
 }
 
 .item-name {
@@ -342,7 +344,7 @@ const submit = async () => {
   font-size: 0.875rem;
 }
 
-.sku { font-family: monospace; color: #2563eb; }
+.sku { font-family: monospace; color: var(--color-accent); }
 .shortage { color: #dc2626; font-weight: 500; }
 
 .form-grid {
@@ -375,7 +377,7 @@ const submit = async () => {
 
 .form-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: var(--color-accent);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
@@ -408,7 +410,7 @@ textarea.form-input { resize: vertical; }
 .detail-item { display: flex; flex-direction: column; gap: 0.25rem; }
 .detail-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); }
 .detail-value { font-size: 0.938rem; color: var(--color-text-heading); font-weight: 500; }
-.detail-value.mono { font-family: monospace; color: #2563eb; }
+.detail-value.mono { font-family: monospace; color: var(--color-accent); }
 
 .po-notes { margin-top: 0.5rem; }
 .notes-text { color: var(--color-text-body); font-size: 0.875rem; margin-top: 0.25rem; }
@@ -461,4 +463,20 @@ textarea.form-input { resize: vertical; }
 .modal-enter-from, .modal-leave-to { opacity: 0; }
 .modal-enter-active .modal-container, .modal-leave-active .modal-container { transition: transform 0.2s ease; }
 .modal-enter-from .modal-container, .modal-leave-to .modal-container { transform: scale(0.95); }
+
+/* Dark-mode overrides for the otherwise-hardcoded status colors. The
+   light-tone error backgrounds aren't readable on a dark surface, and
+   the pastel badges wash out against --color-surface in dark mode. */
+[data-theme="dark"] .form-error,
+[data-theme="dark"] .error-state {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.4);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .shortage { color: #fca5a5; }
+
+[data-theme="dark"] .badge.pending { background: rgba(217, 119, 6, 0.2); color: #fcd34d; }
+[data-theme="dark"] .badge.approved { background: rgba(5, 150, 105, 0.2); color: #6ee7b7; }
+[data-theme="dark"] .badge.delivered { background: rgba(37, 99, 235, 0.2); color: #93c5fd; }
 </style>

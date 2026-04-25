@@ -101,11 +101,16 @@ export function useI18n() {
   // so the browser can't pick an arbitrary region for grouping/decimals.
   // Fraction digits are intentionally NOT pinned: Intl picks the right
   // value per currency (USD → 2, JPY → 0).
-  const formatCurrency = (num) =>
-    Number(num).toLocaleString(BCP47_TAGS[currentLocale.value] ?? currentLocale.value, {
+  // Non-finite input (null/undefined/NaN) renders as an em-dash placeholder
+  // so a missing field doesn't surface as the literal string "NaN".
+  const formatCurrency = (num) => {
+    const n = Number(num)
+    if (!Number.isFinite(n)) return '—'
+    return n.toLocaleString(BCP47_TAGS[currentLocale.value] ?? currentLocale.value, {
       style: 'currency',
       currency: currentCurrency.value
     })
+  }
 
   const translateCategory = (category) =>
     CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category]) : category
