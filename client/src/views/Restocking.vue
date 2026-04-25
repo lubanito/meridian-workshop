@@ -272,17 +272,23 @@ export default {
       editedQtys.value[sku] = Math.max(0, Math.floor(Number(raw) || 0))
     }
 
-    // Keep editedQtys in sync with recommendations (reset on data reload)
+    // Keep editedQtys in sync with recommendations. If the user has already
+    // edited a qty for an SKU that's still present after the new fetch
+    // (e.g. they typed a number, then changed a filter that excludes/includes
+    // the same SKU), preserve the edit. Only seed from the recommendation's
+    // default for SKUs we haven't seen yet.
     watch(recommendations, (newRecs) => {
-      const qtys = {}
+      const next = {}
       for (const item of newRecs) {
-        qtys[item.sku] = item.recommended_qty
+        next[item.sku] = editedQtys.value[item.sku] ?? item.recommended_qty
       }
-      editedQtys.value = qtys
+      editedQtys.value = next
     }, { immediate: true })
 
     const sortedRecommendations = computed(() => {
-      const priorityOrder = { High: 0, Medium: 1, Low: 2 }
+      // recommendations only ever assigns High or Medium (the !isBelowReorder
+      // && !isIncreasing case is filtered out earlier), so Low is unused here.
+      const priorityOrder = { High: 0, Medium: 1 }
       return [...recommendations.value].sort((a, b) => {
         const pDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
         if (pDiff !== 0) return pDiff

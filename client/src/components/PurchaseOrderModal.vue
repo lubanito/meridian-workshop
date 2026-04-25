@@ -37,7 +37,7 @@
                 </div>
                 <div class="form-field">
                   <label class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
-                  <input v-model="form.expected_delivery_date" type="date" required class="form-input" />
+                  <input v-model="form.expected_delivery_date" type="date" :min="todayIso" required class="form-input" />
                 </div>
               </div>
               <div class="form-field full-width">
@@ -131,6 +131,10 @@ const emit = defineEmits(['close', 'po-created'])
 const onEscape = (e) => { if (e.key === 'Escape') emit('close') }
 
 const { t, formatCurrency } = useI18n()
+
+// Local-date YYYY-MM-DD for the date-input `min` attribute, so a buyer
+// can't pick a delivery date in the past.
+const todayIso = new Date().toISOString().slice(0, 10)
 
 const shortage = computed(() => {
   if (!props.backlogItem) return 0
