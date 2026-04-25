@@ -16,6 +16,14 @@ test.describe('Navigation', () => {
     await expect(nav.getByRole('link', { name: 'Finance' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Demand Forecast' })).toBeVisible();
     await expect(nav.getByRole('link', { name: 'Reports' })).toBeVisible();
+    await expect(nav.getByRole('link', { name: 'Restocking' })).toBeVisible();
+  });
+
+  test('navigates to Restocking page', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('link', { name: 'Restocking' }).click();
+    await expect(page).toHaveURL('/restocking');
+    await expect(page.getByRole('heading', { name: 'Restocking Recommendations' })).toBeVisible();
   });
 
   test('navigates to Inventory page', async ({ page }) => {

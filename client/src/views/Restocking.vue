@@ -1,35 +1,35 @@
 <template>
   <div class="view-container">
     <div class="page-header">
-      <h2>Restocking Recommendations</h2>
-      <p>Purchase order recommendations based on current stock levels and demand forecasts.</p>
+      <h2>{{ t('restocking.title') }}</h2>
+      <p>{{ t('restocking.description') }}</p>
     </div>
 
     <div class="stats-grid">
       <div class="stat-card danger">
-        <div class="stat-label">Below Reorder Point</div>
+        <div class="stat-label">{{ t('restocking.belowReorderPoint') }}</div>
         <div class="stat-value">{{ belowReorderCount }}</div>
       </div>
       <div class="stat-card warning">
-        <div class="stat-label">Increasing Demand</div>
+        <div class="stat-label">{{ t('restocking.increasingDemand') }}</div>
         <div class="stat-value">{{ increasingDemandCount }}</div>
       </div>
       <div class="stat-card info">
-        <div class="stat-label">Total Candidates</div>
+        <div class="stat-label">{{ t('restocking.totalCandidates') }}</div>
         <div class="stat-value">{{ sortedRecommendations.length }}</div>
       </div>
       <div class="stat-card" :class="isOverBudget ? 'danger' : 'success'">
-        <div class="stat-label">Budget Utilization</div>
+        <div class="stat-label">{{ t('restocking.budgetUtilization') }}</div>
         <div class="stat-value">{{ budgetPercent }}%</div>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Budget Ceiling</span>
+        <span class="card-title">{{ t('restocking.budgetCeiling') }}</span>
       </div>
       <div class="budget-input-row">
-        <label for="budget-input" class="budget-label">Budget ceiling ($)</label>
+        <label for="budget-input" class="budget-label">{{ t('restocking.budgetLabel') }}</label>
         <input
           id="budget-input"
           v-model.number="budgetCeiling"
@@ -41,35 +41,35 @@
       </div>
     </div>
 
-    <div v-if="loading" class="loading">Loading recommendations...</div>
+    <div v-if="loading" class="loading">{{ t('common.loading') }}</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <template v-else>
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Recommended Purchase Orders</span>
-          <span class="result-count">{{ sortedRecommendations.length }} items</span>
+          <span class="card-title">{{ t('restocking.table.title') }}</span>
+          <span class="result-count">{{ sortedRecommendations.length }} {{ t('restocking.items') }}</span>
         </div>
         <div class="table-container">
           <table>
             <thead>
               <tr>
-                <th>Priority</th>
-                <th>SKU</th>
-                <th>Name</th>
-                <th>Category</th>
-                <th>On Hand</th>
-                <th>Reorder Point</th>
-                <th>Demand Forecast</th>
-                <th>Qty to Order</th>
-                <th>Unit Cost</th>
-                <th>Est. Cost</th>
+                <th>{{ t('restocking.table.priority') }}</th>
+                <th>{{ t('inventory.table.sku') }}</th>
+                <th>{{ t('restocking.table.name') }}</th>
+                <th>{{ t('restocking.table.category') }}</th>
+                <th>{{ t('restocking.table.onHand') }}</th>
+                <th>{{ t('restocking.table.reorderPoint') }}</th>
+                <th>{{ t('restocking.table.demandForecast') }}</th>
+                <th>{{ t('restocking.table.qtyToOrder') }}</th>
+                <th>{{ t('restocking.table.unitCost') }}</th>
+                <th>{{ t('restocking.table.estCost') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="item in sortedRecommendations"
                 :key="item.sku"
-                :class="{ 'row-over-budget': isItemOverRemainingBudget(item) }"
+                :class="{ 'row-over-budget': overBudgetSkus.has(item.sku) }"
               >
                 <td>
                   <span class="badge" :class="item.priority.toLowerCase()">
@@ -89,17 +89,17 @@
                 </td>
                 <td>
                   <input
-                    v-model.number="item.qty_to_order"
+                    :value="editedQtys[item.sku]"
                     type="number"
                     min="0"
                     class="qty-input"
-                    @input="clampQty(item)"
+                    @input="editedQtys[item.sku] = Math.max(0, Number($event.target.value) || 0)"
                   />
                 </td>
                 <td>${{ item.unit_cost.toFixed(2) }}</td>
                 <td>
-                  <span class="est-cost">${{ (item.qty_to_order * item.unit_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
-                  <span v-if="isItemOverRemainingBudget(item)" class="badge danger over-budget-badge">Over budget</span>
+                  <span class="est-cost">${{ (editedQtys[item.sku] * item.unit_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                  <span v-if="overBudgetSkus.has(item.sku)" class="badge danger over-budget-badge">{{ t('restocking.overBudget') }}</span>
                 </td>
               </tr>
             </tbody>
@@ -110,13 +110,13 @@
       <div class="card budget-summary-card">
         <div class="budget-summary-header">
           <span class="budget-summary-text">
-            Total selected:
+            {{ t('restocking.summary.totalSelected') }}
             <strong>${{ totalSelected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
-            of
+            {{ t('restocking.summary.of') }}
             <strong>${{ budgetCeiling.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</strong>
-            budget ({{ budgetPercent }}%)
+            {{ t('restocking.summary.budget') }} ({{ budgetPercent }}%)
           </span>
-          <span v-if="isOverBudget" class="badge danger">Over Budget</span>
+          <span v-if="isOverBudget" class="badge danger">{{ t('restocking.summary.overBudget') }}</span>
         </div>
         <div class="progress-bar-track">
           <div
@@ -129,19 +129,19 @@
 
       <div class="actions-row">
         <button class="btn-primary" @click="generatePurchaseOrders">
-          Generate Purchase Orders
+          {{ t('restocking.generatePO') }}
         </button>
       </div>
 
       <div v-if="successMessage" class="success-alert">
-        <strong>Purchase orders generated successfully.</strong>
+        <strong>{{ t('restocking.successMessage') }}</strong>
         <ul>
           <li v-for="item in confirmedItems" :key="item.sku">
             {{ item.sku }} — {{ item.name }}: {{ item.qty_to_order.toLocaleString() }} units @ ${{ item.unit_cost.toFixed(2) }} = ${{ (item.qty_to_order * item.unit_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
           </li>
         </ul>
         <div class="success-total">
-          Total: <strong>${{ confirmedTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+          {{ t('restocking.summary.total') }} <strong>${{ confirmedTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
         </div>
       </div>
     </template>
@@ -149,23 +149,26 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useFilters } from '../composables/useFilters'
+import { useI18n } from '../composables/useI18n'
 import { api } from '../api'
 
 export default {
   name: 'Restocking',
   setup() {
     const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
+    const { t } = useI18n()
 
     const inventory = ref([])
     const demandForecasts = ref([])
-    const loading = ref(false)
+    const loading = ref(true)
     const error = ref(null)
     const budgetCeiling = ref(50000)
     const successMessage = ref(false)
     const confirmedItems = ref([])
     const confirmedTotal = ref(0)
+    const editedQtys = ref({})
 
     const loadData = async () => {
       loading.value = true
@@ -187,7 +190,6 @@ export default {
       }
     }
 
-    // Build demand map keyed by item_sku
     const demandMap = computed(() => {
       const map = {}
       for (const d of demandForecasts.value) {
@@ -205,7 +207,6 @@ export default {
 
         if (!isBelowReorder && !isIncreasing) continue
 
-        // Determine priority
         let priority
         if (isBelowReorder && isIncreasing) {
           priority = 'High'
@@ -215,7 +216,6 @@ export default {
           priority = 'Low'
         }
 
-        // Recommended quantity
         let recommended_qty = Math.max(item.reorder_point * 2 - item.quantity_on_hand, 0)
         if (demand && demand.forecasted_demand > item.quantity_on_hand) {
           recommended_qty = Math.max(recommended_qty, demand.forecasted_demand - item.quantity_on_hand)
@@ -231,20 +231,29 @@ export default {
           unit_cost: item.unit_cost,
           forecasted_demand: demand ? demand.forecasted_demand : null,
           recommended_qty,
-          qty_to_order: recommended_qty,
-          priority,
-          estimated_cost: recommended_qty * item.unit_cost
+          priority
         })
       }
       return results
     })
+
+    // Keep editedQtys in sync with recommendations (reset on data reload)
+    watch(recommendations, (newRecs) => {
+      const qtys = {}
+      for (const item of newRecs) {
+        qtys[item.sku] = item.recommended_qty
+      }
+      editedQtys.value = qtys
+    }, { immediate: true })
 
     const sortedRecommendations = computed(() => {
       const priorityOrder = { High: 0, Medium: 1, Low: 2 }
       return [...recommendations.value].sort((a, b) => {
         const pDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
         if (pDiff !== 0) return pDiff
-        return (b.qty_to_order * b.unit_cost) - (a.qty_to_order * a.unit_cost)
+        const aCost = (editedQtys.value[a.sku] ?? a.recommended_qty) * a.unit_cost
+        const bCost = (editedQtys.value[b.sku] ?? b.recommended_qty) * b.unit_cost
+        return bCost - aCost
       })
     })
 
@@ -260,7 +269,10 @@ export default {
     })
 
     const totalSelected = computed(() =>
-      sortedRecommendations.value.reduce((sum, item) => sum + (item.qty_to_order * item.unit_cost), 0)
+      recommendations.value.reduce((sum, item) => {
+        const qty = editedQtys.value[item.sku] ?? 0
+        return sum + qty * item.unit_cost
+      }, 0)
     )
 
     const budgetPercent = computed(() => {
@@ -272,32 +284,32 @@ export default {
 
     const progressBarWidth = computed(() => Math.min(budgetPercent.value, 100))
 
-    // Determine which items push the cumulative total over budget
-    const isItemOverRemainingBudget = (item) => {
+    // Compute which SKUs push the cumulative total over budget — O(n) via Set
+    const overBudgetSkus = computed(() => {
+      const skus = new Set()
       let running = 0
       for (const rec of sortedRecommendations.value) {
-        const cost = rec.qty_to_order * rec.unit_cost
-        if (running + cost > budgetCeiling.value && cost > 0) {
-          if (rec.sku === item.sku) return true
-          // If we haven't reached this item yet but budget is already exceeded, mark it
-          if (running > budgetCeiling.value) return true
+        const qty = editedQtys.value[rec.sku] ?? 0
+        const cost = qty * rec.unit_cost
+        if (cost > 0 && (running >= budgetCeiling.value || running + cost > budgetCeiling.value)) {
+          skus.add(rec.sku)
+        } else {
+          running += cost
         }
-        running += cost
-        if (rec.sku === item.sku) break
       }
-      return false
-    }
+      return skus
+    })
 
-    const clampQty = (item) => {
-      if (item.qty_to_order < 0) item.qty_to_order = 0
-    }
-
-    const generatePurchaseOrders = () => {
-      const selected = sortedRecommendations.value.filter(i => i.qty_to_order > 0)
+    const generatePurchaseOrders = async () => {
+      const selected = recommendations.value.filter(i => (editedQtys.value[i.sku] ?? 0) > 0)
       if (selected.length === 0) return
-      confirmedItems.value = selected.map(i => ({ ...i }))
-      confirmedTotal.value = selected.reduce((sum, i) => sum + i.qty_to_order * i.unit_cost, 0)
+      confirmedItems.value = selected.map(i => ({
+        ...i,
+        qty_to_order: editedQtys.value[i.sku] ?? 0
+      }))
+      confirmedTotal.value = selected.reduce((sum, i) => sum + (editedQtys.value[i.sku] ?? 0) * i.unit_cost, 0)
       successMessage.value = true
+      await nextTick()
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
     }
 
@@ -310,9 +322,11 @@ export default {
     })
 
     return {
+      t,
       loading,
       error,
       budgetCeiling,
+      editedQtys,
       sortedRecommendations,
       belowReorderCount,
       increasingDemandCount,
@@ -320,8 +334,7 @@ export default {
       budgetPercent,
       isOverBudget,
       progressBarWidth,
-      isItemOverRemainingBudget,
-      clampQty,
+      overBudgetSkus,
       generatePurchaseOrders,
       successMessage,
       confirmedItems,

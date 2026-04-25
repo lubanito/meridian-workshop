@@ -246,9 +246,11 @@ export default {
       of: '/',
       budget: '予算',
       overBudget: '予算超過',
-      withinBudget: '予算内'
+      withinBudget: '予算内',
+      total: '合計：'
     },
-    generatePO: '発注書を生成'
+    generatePO: '発注書を生成',
+    successMessage: '発注書が正常に生成されました。'
   },
 
   // Filters

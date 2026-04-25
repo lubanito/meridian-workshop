@@ -246,9 +246,11 @@ export default {
       of: 'of',
       budget: 'budget',
       overBudget: 'Over Budget',
-      withinBudget: 'Within Budget'
+      withinBudget: 'Within Budget',
+      total: 'Total:'
     },
-    generatePO: 'Generate Purchase Orders'
+    generatePO: 'Generate Purchase Orders',
+    successMessage: 'Purchase orders generated successfully.'
   },
 
   // Filters
