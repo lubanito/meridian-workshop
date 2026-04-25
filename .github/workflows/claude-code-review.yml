@@ -24,8 +24,6 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt: |
-            Review this pull request for code quality, correctness, security, and maintainability.
-            Provide specific inline comments on changed lines where relevant.
-            Focus on: bugs, security vulnerabilities, Vue 3 best practices, API design, and test coverage.
-            Be concise — flag real issues, not style preferences.
+          plugin_marketplaces: 'https://github.com/anthropics/claude-plugins-official'
+          plugins: 'code-review@claude-code-plugins'
+          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
