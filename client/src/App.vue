@@ -205,6 +205,7 @@ export default {
   --color-bg-subtle: #f1f5f9;
   --color-accent: #2563eb;
   --color-accent-bg: #eff6ff;
+  --color-danger: #dc2626;
 }
 
 [data-theme="dark"] {
@@ -221,6 +222,9 @@ export default {
   --color-bg-subtle: #1e293b;
   --color-accent: #2563eb;
   --color-accent-bg: #1e3a5f;
+  /* Same shade as light mode — #dc2626 on the dark surface
+     (#1e293b) is ~4.7:1 contrast, clears WCAG AA. */
+  --color-danger: #dc2626;
 }
 
 * {

@@ -504,7 +504,7 @@ export default {
 }
 
 .text-danger {
-  color: #dc2626;
+  color: var(--color-danger);
   font-weight: 600;
 }
 
@@ -584,7 +584,7 @@ export default {
 }
 
 .progress-bar-fill.progress-over {
-  background: #dc2626;
+  background: var(--color-danger);
 }
 
 .actions-row {
