@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Literal, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from mock_data import inventory_items, orders, demand_forecasts, backlog_items, spending_summary, monthly_spending, category_spending, recent_transactions, purchase_orders, tasks
 
 app = FastAPI(title="Factory Inventory Management System")
@@ -114,9 +114,9 @@ class PurchaseOrder(BaseModel):
 
 class CreatePurchaseOrderRequest(BaseModel):
     backlog_item_id: str
-    supplier_name: str
-    quantity: int
-    unit_cost: float
+    supplier_name: str = Field(..., min_length=1)
+    quantity: int = Field(..., gt=0)
+    unit_cost: float = Field(..., ge=0)
     expected_delivery_date: str
     notes: Optional[str] = None
 
@@ -129,7 +129,7 @@ class Task(BaseModel):
     created_date: str
 
 class CreateTaskRequest(BaseModel):
-    title: str
+    title: str = Field(..., min_length=1)
     priority: Literal['low', 'medium', 'high'] = 'medium'
     due_date: Optional[str] = None
 
@@ -315,6 +315,9 @@ def get_monthly_trends(
 
 # FIXME(auth): Task and purchase-order endpoints have no authentication.
 # Before any production deployment, add auth middleware (e.g. OAuth2 bearer token check).
+# FIXME(persistence): tasks/purchase_orders are module-level Python lists; any
+# state created via the API is wiped on server restart. Move to a real store
+# (SQLite / Postgres) before anything beyond the demo.
 @app.get("/api/tasks", response_model=List[Task])
 def get_tasks():
     """Get all tasks"""

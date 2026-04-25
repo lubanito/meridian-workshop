@@ -125,6 +125,15 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'po-created'])
 
+// WCAG 2.1 SC 2.1.2 — keyboard users must be able to dismiss the modal.
+// A document-level listener works regardless of which element has focus,
+// which matters because Teleport renders the overlay outside this component.
+const onEscape = (e) => { if (e.key === 'Escape') emit('close') }
+watch(() => props.isOpen, (open) => {
+  if (open) document.addEventListener('keydown', onEscape)
+  else document.removeEventListener('keydown', onEscape)
+})
+
 const { t, formatCurrency } = useI18n()
 
 const shortage = computed(() => {

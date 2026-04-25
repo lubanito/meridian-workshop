@@ -29,7 +29,7 @@
             <div class="kpi-value">{{ ordersData.fulfilled }}</div>
             <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: {{ ordersData.goal }} <span :class="['kpi-delta', calculatePercentage(ordersData.fulfilled, ordersData.goal) >= 100 ? 'kpi-delta--positive' : 'kpi-delta--warning']">({{ calculatePercentage(ordersData.fulfilled, ordersData.goal) }}%)</span></div>
             <div class="kpi-progress-bar">
-              <div :class="['kpi-progress', calculatePercentage(ordersData.fulfilled, ordersData.goal) >= 100 ? 'success' : 'kpi-progress--warning']" :style="{ width: calculatePercentage(ordersData.fulfilled, ordersData.goal) + '%' }"></div>
+              <div :class="['kpi-progress', calculatePercentage(ordersData.fulfilled, ordersData.goal) >= 100 ? 'success' : 'kpi-progress--warning']" :style="{ width: clampedPercent(ordersData.fulfilled, ordersData.goal) + '%' }"></div>
             </div>
           </div>
 
@@ -586,6 +586,11 @@ export default {
       return parseFloat(((value / goal) * 100).toFixed(2))
     }
 
+    // Floor at 0, cap at 100 — for progress-bar widths so an over-goal value
+    // doesn't overflow the track.
+    const clampedPercent = (value, goal) =>
+      Math.min(Math.max(calculatePercentage(value, goal), 0), 100)
+
     // Bar width for the revenue-vs-goal progress bar, capped at 100%.
     const revenueProgressPercent = computed(() => {
       if (!summary.value || !revenueGoal.value) return 0
@@ -704,6 +709,7 @@ export default {
       topProducts,
       backlogItems,
       calculatePercentage,
+      clampedPercent,
       getCircleSegment,
       getStockBadge,
       translateCategory,

@@ -12,6 +12,12 @@ const translations = {
 const savedLocale = (() => { try { return localStorage.getItem('app-locale') || 'en' } catch { return 'en' } })()
 const currentLocale = ref(savedLocale)
 
+// Named export so consumers that need the locale ref *outside* a setup
+// context (e.g. module-scope code in other composables) can read it
+// without invoking the composable. Exposed as readonly to keep mutation
+// funneled through setLocale().
+export const localeRef = readonly(currentLocale)
+
 // Currency is automatically set based on locale (en -> USD, ja -> JPY)
 const currentCurrency = computed(() => {
   return currentLocale.value === 'ja' ? 'JPY' : 'USD'

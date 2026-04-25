@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { useI18n } from './useI18n'
+import { localeRef } from './useI18n'
 
 // Base user data (language-independent)
 const baseUserData = {
@@ -10,13 +10,8 @@ const baseUserData = {
   joinDate: '2022-03-15'
 }
 
-// useI18n returns module-level singleton refs, so it's safe to grab the
-// locale ref once at module scope. The computed below stays reactive to
-// locale changes because it reads currentLocale.value.
-// TODO: if useI18n is ever refactored to use Vue's inject(), this call must
-// move into useAuth() (a setup-context function) — module-scope inject()
-// throws "inject() can only be used inside setup()".
-const { currentLocale } = useI18n()
+// localeRef is a named export of the i18n locale ref — safe to read at
+// module scope without invoking the composable's setup-context contract.
 
 // Mock current user data with language-aware fields.
 // Note: this rebuilds the full tasks array on every locale change, but
@@ -24,7 +19,7 @@ const { currentLocale } = useI18n()
 // switch only re-translates display labels — it does NOT restore tasks
 // the user has deleted or toggled in the current session.
 const currentUser = computed(() => {
-  const isJapanese = currentLocale.value === 'ja'
+  const isJapanese = localeRef.value === 'ja'
 
   return {
     ...baseUserData,
