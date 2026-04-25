@@ -24,7 +24,9 @@ export default {
       revenueYTD: '収益（注文）年初来',
       revenueMTD: '収益（注文）月初来',
       avgProcessingTime: '平均処理時間（日）',
-      goal: '目標'
+      goal: '目標',
+      staticTag: '年初来',
+      staticHint: '年初来のスナップショット — フィルターには反応しません'
     },
     summary: {
       title: '概要'

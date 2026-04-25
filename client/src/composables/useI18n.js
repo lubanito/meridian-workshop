@@ -88,12 +88,12 @@ export function useI18n() {
   // value — kept here to avoid four divergent copies of the same Intl call.
   // We pass full BCP 47 tags ('en-US' / 'ja-JP') rather than bare 'en' / 'ja'
   // so the browser can't pick an arbitrary region for grouping/decimals.
+  // Fraction digits are intentionally NOT pinned: Intl picks the right
+  // value per currency (USD → 2, JPY → 0).
   const formatCurrency = (num) =>
     Number(num).toLocaleString(BCP47_TAGS[currentLocale.value] ?? currentLocale.value, {
       style: 'currency',
-      currency: currentCurrency.value,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      currency: currentCurrency.value
     })
 
   // Translate product names

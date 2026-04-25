@@ -18,6 +18,12 @@ QUARTER_MAP = {
     'Q4-2025': ['2025-10', '2025-11', '2025-12']
 }
 
+def _month_prefix(value: str) -> str:
+    """Return the YYYY-MM portion of an order_date, ignoring any time
+    component or timezone suffix (e.g. '2025-01-15T00:00:00Z' -> '2025-01').
+    Robust to bare 'YYYY-MM-DD' as well as ISO 8601 datetimes."""
+    return (value or '')[:7]
+
 def filter_by_month(items: list, month: Optional[str]) -> list:
     """Filter items by month/quarter based on order_date field"""
     if not month or month == 'all':
@@ -27,10 +33,12 @@ def filter_by_month(items: list, month: Optional[str]) -> list:
         quarter_months = QUARTER_MAP.get(month)
         if not quarter_months:
             return []  # unrecognized quarter — return empty rather than leaking all records
-        return [item for item in items if any(item.get('order_date', '').startswith(m) for m in quarter_months)]
+        wanted = set(quarter_months)
+        return [item for item in items if _month_prefix(item.get('order_date', '')) in wanted]
     else:
-        # Direct month match — use startswith to avoid '2025-1' matching '2025-10'
-        return [item for item in items if item.get('order_date', '').startswith(month)]
+        # Direct month match using a YYYY-MM slice avoids '2025-1' colliding
+        # with '2025-10' and tolerates ISO 8601 datetime suffixes.
+        return [item for item in items if _month_prefix(item.get('order_date', '')) == month]
 
 def apply_filters(items: list, warehouse: Optional[str] = None, category: Optional[str] = None,
                  status: Optional[str] = None) -> list:

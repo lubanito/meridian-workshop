@@ -113,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { api } from '../api'
 import { useI18n } from '../composables/useI18n'
 
@@ -133,6 +133,9 @@ watch(() => props.isOpen, (open) => {
   if (open) document.addEventListener('keydown', onEscape)
   else document.removeEventListener('keydown', onEscape)
 })
+// Belt-and-suspenders: if the component is destroyed while still open
+// (e.g. parent route changes mid-modal), make sure the listener is gone.
+onUnmounted(() => document.removeEventListener('keydown', onEscape))
 
 const { t, formatCurrency } = useI18n()
 

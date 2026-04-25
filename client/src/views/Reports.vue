@@ -47,7 +47,7 @@
           <h3 class="card-title">{{ t('reports.monthlyTrend') }}</h3>
         </div>
         <div class="chart-container">
-          <div class="bar-chart">
+          <div class="bar-chart" role="img" :aria-label="t('reports.monthlyTrend')">
             <div v-for="month in monthlyData" :key="month.month" class="bar-wrapper">
               <div class="bar-container">
                 <div

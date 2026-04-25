@@ -37,6 +37,7 @@
           min="0"
           step="1000"
           class="budget-input"
+          @blur="normalizeBudget"
         />
       </div>
     </div>
@@ -176,6 +177,13 @@ export default {
     const loading = ref(true)
     const error = ref(null)
     const budgetCeiling = ref(DEFAULT_BUDGET)
+
+    // The number input's `min="0"` is a hint, not a constraint — users can
+    // still type "-100". Normalise on blur so a stray negative or NaN can't
+    // poison the budget calc.
+    const normalizeBudget = () => {
+      if (!(budgetCeiling.value > 0)) budgetCeiling.value = 0
+    }
     const successMessage = ref(false)
     const confirmedItems = ref([])
     const confirmedTotal = ref(0)
@@ -270,7 +278,10 @@ export default {
         if (pDiff !== 0) return pDiff
         const aCost = (editedQtys.value[a.sku] ?? a.recommended_qty) * a.unit_cost
         const bCost = (editedQtys.value[b.sku] ?? b.recommended_qty) * b.unit_cost
-        return bCost - aCost
+        if (aCost !== bCost) return bCost - aCost
+        // Final tiebreaker on SKU keeps the row order stable while a user
+        // edits qtys — without this the table can jump as costs converge.
+        return a.sku.localeCompare(b.sku)
       })
     })
 
@@ -369,6 +380,7 @@ export default {
       loading,
       error,
       budgetCeiling,
+      normalizeBudget,
       editedQtys,
       updateQty,
       sortedRecommendations,

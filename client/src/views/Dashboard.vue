@@ -25,6 +25,7 @@
           <div :class="['kpi-card', calculatePercentage(ordersData.fulfilled, ordersData.goal) >= 100 ? 'kpi-card--positive' : 'kpi-card--warning']">
             <div class="kpi-header">
               <span class="kpi-label">{{ t('dashboard.kpi.ordersFulfilled') }}</span>
+              <span class="kpi-static-tag" :title="t('dashboard.kpi.staticHint')">{{ t('dashboard.kpi.staticTag') }}</span>
             </div>
             <div class="kpi-value">{{ ordersData.fulfilled }}</div>
             <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: {{ ordersData.goal }} <span :class="['kpi-delta', calculatePercentage(ordersData.fulfilled, ordersData.goal) >= 100 ? 'kpi-delta--positive' : 'kpi-delta--warning']">({{ calculatePercentage(ordersData.fulfilled, ordersData.goal) }}%)</span></div>
@@ -36,6 +37,7 @@
           <div :class="['kpi-card', fillRate >= 95 ? 'kpi-card--positive' : 'kpi-card--warning']">
             <div class="kpi-header">
               <span class="kpi-label">{{ t('dashboard.kpi.orderFillRate') }}</span>
+              <span class="kpi-static-tag" :title="t('dashboard.kpi.staticHint')">{{ t('dashboard.kpi.staticTag') }}</span>
             </div>
             <div class="kpi-value">{{ fillRate }}%</div>
             <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: 95% <span :class="['kpi-delta', fillRate >= 95 ? 'kpi-delta--positive' : 'kpi-delta--warning']">({{ fillRate - 95 > 0 ? '+' : '' }}{{ (fillRate - 95).toFixed(2) }}%)</span></div>
@@ -561,7 +563,7 @@ export default {
       error.value = null
       try {
         const filters = getCurrentFilters()
-        const [summaryData, ordersData, inventoryData, backlogData] = await Promise.all([
+        const [summaryData, ordersResponse, inventoryData, backlogData] = await Promise.all([
           api.getDashboardSummary(filters),
           api.getOrders(filters),
           api.getInventory(filters),
@@ -569,7 +571,7 @@ export default {
         ])
         if (currentId !== loadId) return
         summary.value = summaryData
-        allOrders.value = ordersData
+        allOrders.value = ordersResponse
         inventoryItems.value = inventoryData
         allBacklogItems.value = backlogData
       } catch (err) {
@@ -788,6 +790,10 @@ export default {
 
 .kpi-header {
   margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .kpi-label {
@@ -796,6 +802,19 @@ export default {
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.025em;
+}
+
+.kpi-static-tag {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.125rem 0.375rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: help;
 }
 
 .kpi-value {
