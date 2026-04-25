@@ -133,7 +133,7 @@ import { useI18n } from '../composables/useI18n'
 export default {
   name: 'Reports',
   setup() {
-    const { selectedPeriod, selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
+    const { selectedPeriod, selectedLocation, selectedCategory, selectedStatus, getCurrentFilters } = useFilters()
     const { t, currentLocale, formatCurrency } = useI18n()
 
     const loading = ref(true)
@@ -180,11 +180,13 @@ export default {
       }
     }
 
-    watch([selectedPeriod, selectedLocation, selectedCategory], loadData, { immediate: true })
+    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], loadData, { immediate: true })
 
     const formatMonth = (monthStr) => {
+      if (!monthStr?.includes('-')) return monthStr ?? ''
       const [year, month] = monthStr.split('-')
       const d = new Date(Number(year), Number(month) - 1, 1)
+      if (isNaN(d.getTime())) return monthStr
       return new Intl.DateTimeFormat(currentLocale.value, { month: 'short', year: 'numeric' }).format(d)
     }
 

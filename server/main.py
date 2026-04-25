@@ -8,7 +8,9 @@ from mock_data import inventory_items, orders, demand_forecasts, backlog_items, 
 
 app = FastAPI(title="Factory Inventory Management System")
 
-# Quarter mapping for date filtering
+# Quarter mapping for date filtering. Hardcoded to 2025 for the demo
+# dataset — Q*-2024 / Q*-2026 etc. fall through to the unrecognized-quarter
+# branch in filter_by_month and return [] (empty result, no error).
 QUARTER_MAP = {
     'Q1-2025': ['2025-01', '2025-02', '2025-03'],
     'Q2-2025': ['2025-04', '2025-05', '2025-06'],
@@ -209,7 +211,9 @@ def get_dashboard_summary(
 
     total_inventory_value = sum(item["quantity_on_hand"] * item["unit_cost"] for item in filtered_inventory)
     low_stock_items = len([item for item in filtered_inventory if item["quantity_on_hand"] <= item["reorder_point"]])
-    pending_orders = len([order for order in filtered_orders if order["status"] in ["Processing", "Backordered"]])
+    # Compare lowercased on both sides — apply_filters does the same, so the
+    # count stays correct regardless of casing in the source data.
+    pending_orders = len([order for order in filtered_orders if order.get("status", "").lower() in ("processing", "backordered")])
     total_backlog_items = len(backlog_items)
 
     return {

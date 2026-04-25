@@ -534,7 +534,8 @@ tbody tr:hover {
   color: #1e40af;
 }
 
-.loading {
+.loading,
+.empty-state {
   text-align: center;
   padding: 3rem;
   color: var(--color-text-muted);

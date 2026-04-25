@@ -43,6 +43,9 @@
 
     <div v-if="loading" class="loading">{{ t('common.loading') }}</div>
     <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-else-if="sortedRecommendations.length === 0" class="empty-state">
+      {{ t('restocking.noRecommendations') }}
+    </div>
     <template v-else>
       <div class="card">
         <div class="card-header">
@@ -271,8 +274,10 @@ export default {
       return inventory.value.filter(i => skusWithIncreasing.has(i.sku)).length
     })
 
+    // Walk the same priority-sorted list overBudgetSkus uses, so the budget
+    // bar and per-row over-budget badges can never disagree at the boundary.
     const totalSelected = computed(() =>
-      recommendations.value.reduce((sum, item) => {
+      sortedRecommendations.value.reduce((sum, item) => {
         const qty = editedQtys.value[item.sku] ?? 0
         return sum + qty * item.unit_cost
       }, 0)
