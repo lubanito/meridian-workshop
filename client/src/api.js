@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const API_BASE_URL = 'http://localhost:8001/api'
+// Env-overridable so staging/production deployments don't silently keep
+// hitting localhost. .env.example documents the expected variable.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001/api'
 
 const buildUrl = (path, params) => {
   const qs = params.toString()
