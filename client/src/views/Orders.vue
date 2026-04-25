@@ -87,7 +87,7 @@ import { useI18n } from '../composables/useI18n'
 export default {
   name: 'Orders',
   setup() {
-    const { t, currentCurrency, translateProductName, translateCustomerName } = useI18n()
+    const { t, currentLocale, currentCurrency, translateProductName, translateCustomerName } = useI18n()
 
     const currencySymbol = computed(() => {
       return currentCurrency.value === 'JPY' ? '¥' : '$'
@@ -147,7 +147,6 @@ export default {
       if (!dateString) return '—'
       const date = new Date(dateString)
       if (isNaN(date.getTime())) return '—'
-      const { currentLocale } = useI18n()
       const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
       return date.toLocaleDateString(locale, {
         year: 'numeric',

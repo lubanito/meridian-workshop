@@ -314,6 +314,8 @@ def get_monthly_trends(
     result.sort(key=lambda x: x['month'])
     return result
 
+# NOTE: Task and purchase-order endpoints below have no authentication.
+# Before any production deployment, add auth middleware (e.g. OAuth2 bearer token check).
 @app.get("/api/tasks", response_model=List[Task])
 def get_tasks():
     """Get all tasks"""

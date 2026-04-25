@@ -48,6 +48,17 @@ test.describe('Restocking page', () => {
     await page.getByRole('button', { name: /Preview Draft/i }).click();
     await expect(page.getByText(/not yet submitted/i)).toBeVisible();
   });
+
+  test('changing budget ceiling updates budget utilization stat', async ({ page }) => {
+    // Set a very low budget — utilization should spike to over-budget state
+    const input = page.locator('#budget-input');
+    await input.fill('1');
+    // The stat card should flip to danger styling (over budget)
+    await expect(page.locator('.stat-card.danger').filter({ hasText: 'Budget Utilization' })).toBeVisible();
+    // Reset to a high budget — should go back to within-budget
+    await input.fill('9999999');
+    await expect(page.locator('.stat-card.success').filter({ hasText: 'Budget Utilization' })).toBeVisible();
+  });
 });
 
 test.describe('Dark mode (D3)', () => {
