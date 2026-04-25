@@ -84,7 +84,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
@@ -165,10 +165,7 @@ export default {
       }
     }
 
-    // Watch for filter changes and reload data
-    watch([selectedLocation, selectedCategory], () => {
-      loadInventory()
-    })
+    watch([selectedLocation, selectedCategory], loadInventory, { immediate: true })
 
     const getStockStatus = (item) => {
       const key = getStockStatusKey(item)
@@ -200,8 +197,6 @@ export default {
       selectedItem.value = item
       showItemModal.value = true
     }
-
-    onMounted(loadInventory)
 
     return {
       t,

@@ -48,10 +48,10 @@
             <div class="kpi-header">
               <span class="kpi-label">{{ t(selectedPeriod === 'all' ? 'dashboard.kpi.revenueYTD' : 'dashboard.kpi.revenueMTD') }}</span>
             </div>
-            <div class="kpi-value">{{ formatCurrency(Math.round(summary.total_orders_value), selectedCurrency) }}</div>
-            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: {{ formatCurrency(revenueGoal, selectedCurrency) }} <span :class="['kpi-delta', summary.total_orders_value >= revenueGoal ? 'kpi-delta--positive' : 'kpi-delta--warning']">({{ summary.total_orders_value > revenueGoal ? '+' : '' }}{{ ((summary.total_orders_value / revenueGoal - 1) * 100).toFixed(1) }}%)</span></div>
+            <div class="kpi-value">{{ formatCurrency(summary.total_orders_value) }}</div>
+            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: {{ formatCurrency(revenueGoal) }} <span :class="['kpi-delta', summary.total_orders_value >= revenueGoal ? 'kpi-delta--positive' : 'kpi-delta--warning']">({{ summary.total_orders_value > revenueGoal ? '+' : '' }}{{ ((summary.total_orders_value / revenueGoal - 1) * 100).toFixed(1) }}%)</span></div>
             <div class="kpi-progress-bar">
-              <div :class="['kpi-progress', summary.total_orders_value >= revenueGoal ? 'success' : '']" :style="{ width: Math.min((summary.total_orders_value / revenueGoal * 100), 100) + '%' }"></div>
+              <div :class="['kpi-progress', summary.total_orders_value >= revenueGoal ? 'success' : '']" :style="{ width: revenueProgressPercent + '%' }"></div>
             </div>
           </div>
 
@@ -116,11 +116,11 @@
               <div class="order-health-metrics">
                 <div class="health-metric">
                   <div class="health-metric-label">{{ t('dashboard.orderHealth.revenue') }}</div>
-                  <div class="health-metric-value">{{ formatCurrency(orderHealthMetrics.totalValue, selectedCurrency) }}</div>
+                  <div class="health-metric-value">{{ formatCurrency(orderHealthMetrics.totalValue) }}</div>
                 </div>
                 <div class="health-metric">
                   <div class="health-metric-label">{{ t('dashboard.orderHealth.avgOrderValue') }}</div>
-                  <div class="health-metric-value">{{ formatCurrency(orderHealthMetrics.avgOrderValue, selectedCurrency) }}</div>
+                  <div class="health-metric-value">{{ formatCurrency(orderHealthMetrics.avgOrderValue) }}</div>
                 </div>
                 <div class="health-metric">
                   <div class="health-metric-label">{{ t('dashboard.orderHealth.onTimeRate') }}</div>
@@ -148,7 +148,7 @@
                 <div class="h-bar-label">{{ translateCategory(cat.name) }}</div>
                 <div class="h-bar-container">
                   <div class="h-bar" :style="{ width: (cat.value / maxCategoryValue * 100) + '%', background: cat.color }">
-                    <span class="h-bar-value">{{ selectedCurrency === 'JPY' ? formatCurrency(cat.value, selectedCurrency) : `$${(cat.value / 1000).toFixed(1)}K` }}</span>
+                    <span class="h-bar-value">{{ selectedCurrency === 'JPY' ? formatCurrency(cat.value) : `$${(cat.value / 1000).toFixed(1)}K` }}</span>
                   </div>
                 </div>
               </div>
@@ -195,7 +195,7 @@
                   <td @click="showBacklogDetail(item)" style="cursor: pointer;">{{ item.quantity_available }}</td>
                   <td @click="showBacklogDetail(item)" style="cursor: pointer;">
                     <span class="badge danger">
-                      {{ Math.abs(item.quantity_needed - item.quantity_available) }} {{ t('dashboard.inventoryShortages.unitsShort') }}
+                      {{ shortageUnits(item) }} {{ t('dashboard.inventoryShortages.unitsShort') }}
                     </span>
                   </td>
                   <td @click="showBacklogDetail(item)" style="cursor: pointer;">
@@ -210,7 +210,7 @@
                   </td>
                   <td>
                     <button
-                      v-if="!item.purchase_order_id"
+                      v-if="!item.has_purchase_order"
                       @click.stop="openPOModal(item)"
                       class="po-button create"
                     >
@@ -259,7 +259,7 @@
                   <td>{{ item.sku }}</td>
                   <td>{{ translateCategory(item.category) }}</td>
                   <td>{{ item.unitsOrdered }}</td>
-                  <td><strong>{{ formatCurrency(item.revenue, selectedCurrency) }}</strong></td>
+                  <td><strong>{{ formatCurrency(item.revenue) }}</strong></td>
                   <td>{{ formatDate(item.firstOrderDate) }}</td>
                   <td>
                     <span :class="['badge', getStockBadge(item.stockLevel)]">
@@ -588,8 +588,19 @@ export default {
     }
 
     const calculatePercentage = (value, goal) => {
-      return ((value / goal) * 100).toFixed(2)
+      // parseFloat round-trips through toFixed so the template comparison
+      // (`>= 100`) works against a number, not a string.
+      return parseFloat(((value / goal) * 100).toFixed(2))
     }
+
+    // Bar width for the revenue-vs-goal progress bar, capped at 100%.
+    const revenueProgressPercent = computed(() => {
+      if (!summary.value || !revenueGoal.value) return 0
+      return Math.min((summary.value.total_orders_value / revenueGoal.value) * 100, 100)
+    })
+
+    const shortageUnits = (item) =>
+      Math.abs(item.quantity_needed - item.quantity_available)
 
     // Compute total orders once for efficiency
     const totalOrders = computed(() => {
@@ -722,7 +733,8 @@ export default {
       selectedPeriod,
       selectedCurrency: currentCurrency,
       formatCurrency,
-      Math,
+      revenueProgressPercent,
+      shortageUnits,
       translateProductName,
       translateWarehouse,
       showPOModal,

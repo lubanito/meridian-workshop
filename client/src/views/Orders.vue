@@ -11,19 +11,19 @@
       <div class="stats-grid">
         <div class="stat-card success">
           <div class="stat-label">{{ t('status.delivered') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Delivered').length }}</div>
+          <div class="stat-value">{{ statusCounts.Delivered }}</div>
         </div>
         <div class="stat-card info">
           <div class="stat-label">{{ t('status.shipped') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Shipped').length }}</div>
+          <div class="stat-value">{{ statusCounts.Shipped }}</div>
         </div>
         <div class="stat-card warning">
           <div class="stat-label">{{ t('status.processing') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Processing').length }}</div>
+          <div class="stat-value">{{ statusCounts.Processing }}</div>
         </div>
         <div class="stat-card danger">
           <div class="stat-label">{{ t('status.backordered') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Backordered').length }}</div>
+          <div class="stat-value">{{ statusCounts.Backordered }}</div>
         </div>
       </div>
 
@@ -126,9 +126,16 @@ export default {
 
     watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], loadOrders, { immediate: true })
 
-    const getOrdersByStatus = (status) => {
-      return orders.value.filter(order => order.status === status)
-    }
+    // Single pass over orders builds a status -> count map. The template
+    // reads counts via statusCounts.Delivered etc., so re-renders don't
+    // re-iterate orders four times per status badge.
+    const statusCounts = computed(() => {
+      const counts = { Delivered: 0, Shipped: 0, Processing: 0, Backordered: 0 }
+      for (const o of orders.value) {
+        if (counts[o.status] !== undefined) counts[o.status]++
+      }
+      return counts
+    })
 
     const getOrderStatusClass = (status) => {
       const statusMap = {
@@ -157,7 +164,7 @@ export default {
       loading,
       error,
       orders,
-      getOrdersByStatus,
+      statusCounts,
       getOrderStatusClass,
       formatDate,
       currencySymbol,

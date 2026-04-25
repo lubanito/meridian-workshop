@@ -134,7 +134,7 @@
         <span class="draft-hint">{{ t('restocking.draftHint') }}</span>
       </div>
 
-      <div v-if="successMessage" class="success-alert">
+      <div v-if="successMessage" ref="successAlertRef" class="success-alert">
         <strong>{{ t('restocking.successMessage') }}</strong>
         <ul>
           <li v-for="item in confirmedItems" :key="item.sku">
@@ -169,6 +169,7 @@ export default {
     const successMessage = ref(false)
     const confirmedItems = ref([])
     const confirmedTotal = ref(0)
+    const successAlertRef = ref(null)
     const editedQtys = ref({})
 
     const loadData = async () => {
@@ -323,7 +324,7 @@ export default {
       confirmedTotal.value = selected.reduce((sum, i) => sum + (editedQtys.value[i.sku] ?? 0) * i.unit_cost, 0)
       successMessage.value = true
       await nextTick()
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+      successAlertRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
 
     // FilterBar is mounted globally in App.vue; selectedLocation/selectedCategory
@@ -348,6 +349,7 @@ export default {
       overBudgetSkus,
       previewDraftPOs,
       successMessage,
+      successAlertRef,
       confirmedItems,
       confirmedTotal
     }

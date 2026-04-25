@@ -23,21 +23,15 @@ export function useFilters() {
     selectedStatus.value = 'all'
   }
 
-  // Get current filters as an object for API calls
-  const getCurrentFilters = () => {
-    const filters = {
-      warehouse: selectedLocation.value,
-      category: selectedCategory.value,
-      status: selectedStatus.value
-    }
-
-    // Map period to month format for API
-    if (selectedPeriod.value !== 'all') {
-      filters.month = selectedPeriod.value
-    }
-
-    return filters
-  }
+  // Get current filters as an object for API calls. Always include every
+  // key so the shape is stable; api.js drops 'all' values when building
+  // the query string.
+  const getCurrentFilters = () => ({
+    warehouse: selectedLocation.value,
+    category: selectedCategory.value,
+    status: selectedStatus.value,
+    month: selectedPeriod.value
+  })
 
   return {
     // State
