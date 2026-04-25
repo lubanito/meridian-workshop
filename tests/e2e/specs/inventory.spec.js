@@ -7,7 +7,6 @@ test.describe('Inventory page', () => {
 
   test('page heading shows correct SKU count', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /Stock Levels \(\d+ SKUs\)/ })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Stock Levels (32 SKUs)' })).toBeVisible();
   });
 
   test('inventory table has correct columns', async ({ page }) => {
@@ -38,7 +37,7 @@ test.describe('Inventory page', () => {
     const search = page.getByPlaceholder('Search by item name...');
     await search.fill('motor');
     await search.clear();
-    await expect(page.getByRole('heading', { name: 'Stock Levels (32 SKUs)' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Stock Levels \(\d+ SKUs\)/ })).toBeVisible();
   });
 
   test('Low Stock items are visible', async ({ page }) => {

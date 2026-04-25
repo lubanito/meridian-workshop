@@ -50,5 +50,8 @@ logs/
 # Playwright MCP artifacts
 .playwright-mcp/
 
+# Playwright run-state cache
+tests/e2e/test-results/
+
 # Environment variables
 .env

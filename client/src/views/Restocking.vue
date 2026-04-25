@@ -96,9 +96,9 @@
                     @input="editedQtys[item.sku] = Math.max(0, Number($event.target.value) || 0)"
                   />
                 </td>
-                <td>${{ item.unit_cost.toFixed(2) }}</td>
+                <td>{{ formatCurrency(item.unit_cost) }}</td>
                 <td>
-                  <span class="est-cost">${{ (editedQtys[item.sku] * item.unit_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                  <span class="est-cost">{{ formatCurrency(editedQtys[item.sku] * item.unit_cost) }}</span>
                   <span v-if="overBudgetSkus.has(item.sku)" class="badge danger over-budget-badge">{{ t('restocking.overBudget') }}</span>
                 </td>
               </tr>
@@ -111,9 +111,9 @@
         <div class="budget-summary-header">
           <span class="budget-summary-text">
             {{ t('restocking.summary.totalSelected') }}
-            <strong>${{ totalSelected.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+            <strong>{{ formatCurrency(totalSelected) }}</strong>
             {{ t('restocking.summary.of') }}
-            <strong>${{ budgetCeiling.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) }}</strong>
+            <strong>{{ formatCurrency(budgetCeiling) }}</strong>
             {{ t('restocking.summary.budget') }} ({{ budgetPercent }}%)
           </span>
           <span v-if="isOverBudget" class="badge danger">{{ t('restocking.summary.overBudget') }}</span>
@@ -137,11 +137,11 @@
         <strong>{{ t('restocking.successMessage') }}</strong>
         <ul>
           <li v-for="item in confirmedItems" :key="item.sku">
-            {{ item.sku }} — {{ item.name }}: {{ item.qty_to_order.toLocaleString() }} units @ ${{ item.unit_cost.toFixed(2) }} = ${{ (item.qty_to_order * item.unit_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+            {{ item.sku }} — {{ item.name }}: {{ item.qty_to_order.toLocaleString() }} units @ {{ formatCurrency(item.unit_cost) }} = {{ formatCurrency(item.qty_to_order * item.unit_cost) }}
           </li>
         </ul>
         <div class="success-total">
-          {{ t('restocking.summary.total') }} <strong>${{ confirmedTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+          {{ t('restocking.summary.total') }} <strong>{{ formatCurrency(confirmedTotal) }}</strong>
         </div>
       </div>
     </template>
@@ -149,7 +149,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
 import { api } from '../api'
@@ -158,7 +158,7 @@ export default {
   name: 'Restocking',
   setup() {
     const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t } = useI18n()
+    const { t, currentCurrency } = useI18n()
 
     const inventory = ref([])
     const demandForecasts = ref([])
@@ -237,6 +237,14 @@ export default {
       return results
     })
 
+    const formatCurrency = (num) =>
+      Number(num).toLocaleString('en-US', {
+        style: 'currency',
+        currency: currentCurrency.value,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })
+
     // Keep editedQtys in sync with recommendations (reset on data reload)
     watch(recommendations, (newRecs) => {
       const qtys = {}
@@ -286,6 +294,7 @@ export default {
 
     // Compute which SKUs push the cumulative total over budget — O(n) via Set
     const overBudgetSkus = computed(() => {
+      if (budgetCeiling.value <= 0) return new Set()
       const skus = new Set()
       let running = 0
       for (const rec of sortedRecommendations.value) {
@@ -313,16 +322,11 @@ export default {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
     }
 
-    watch([selectedLocation, selectedCategory], () => {
-      loadData()
-    })
-
-    onMounted(() => {
-      loadData()
-    })
+    watch([selectedLocation, selectedCategory], loadData, { immediate: true })
 
     return {
       t,
+      formatCurrency,
       loading,
       error,
       budgetCeiling,

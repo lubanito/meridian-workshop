@@ -134,7 +134,7 @@ export default {
   name: 'Reports',
   setup() {
     const { selectedPeriod, selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, currentCurrency } = useI18n()
+    const { t, currentLocale, currentCurrency } = useI18n()
 
     const loading = ref(true)
     const error = ref(null)
@@ -194,8 +194,8 @@ export default {
 
     const formatMonth = (monthStr) => {
       const [year, month] = monthStr.split('-')
-      const names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-      return names[parseInt(month) - 1] + ' ' + year
+      const d = new Date(Number(year), Number(month) - 1, 1)
+      return new Intl.DateTimeFormat(currentLocale.value, { month: 'short', year: 'numeric' }).format(d)
     }
 
     const getBarHeight = (revenue) => {
@@ -211,8 +211,8 @@ export default {
 
     const getChangeValue = (current, previous) => {
       const change = current - previous
-      const abs = formatCurrency(Math.abs(change))
-      return change > 0 ? `+${abs}` : change < 0 ? `-${abs}` : formatCurrency(0)
+      if (change === 0) return formatCurrency(0)
+      return (change > 0 ? '+' : '') + formatCurrency(change)
     }
 
     const getChangeClass = (current, previous) => {
