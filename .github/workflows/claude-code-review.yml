@@ -10,7 +10,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      issues: read
+      issues: write
       id-token: write
 
     steps:
@@ -24,6 +24,11 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: 'https://github.com/anthropics/claude-plugins-official.git'
-          plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
+          prompt: |
+            Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
+
+            1. Use gh or the GitHub API to fetch the diff for this PR.
+            2. Review the changed files for bugs, security issues, Vue 3 best practices, API design, and test coverage.
+            3. Post your findings as a PR review comment using the GitHub API (POST /repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews).
+
+            Be specific and concise. Flag real issues, not style preferences.
