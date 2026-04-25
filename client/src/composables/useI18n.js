@@ -23,6 +23,9 @@ const currentCurrency = computed(() => {
   return currentLocale.value === 'ja' ? 'JPY' : 'USD'
 })
 
+// Bare-language → BCP 47 tag, used for Intl APIs that need an unambiguous region
+const BCP47_TAGS = { en: 'en-US', ja: 'ja-JP' }
+
 export function useI18n() {
   const t = (key, params = {}) => {
     const keys = key.split('.')
@@ -83,8 +86,10 @@ export function useI18n() {
 
   // Locale + currency aware. Used by every view that renders a currency
   // value — kept here to avoid four divergent copies of the same Intl call.
+  // We pass full BCP 47 tags ('en-US' / 'ja-JP') rather than bare 'en' / 'ja'
+  // so the browser can't pick an arbitrary region for grouping/decimals.
   const formatCurrency = (num) =>
-    Number(num).toLocaleString(currentLocale.value, {
+    Number(num).toLocaleString(BCP47_TAGS[currentLocale.value] ?? currentLocale.value, {
       style: 'currency',
       currency: currentCurrency.value,
       minimumFractionDigits: 2,

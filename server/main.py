@@ -114,13 +114,18 @@ class PurchaseOrder(BaseModel):
     created_date: str
     notes: Optional[str] = None
 
+# ISO 8601 calendar date — matches the YYYY-MM-DD format used everywhere
+# else in the dataset; rejecting other shapes at the boundary keeps the
+# rest of the codebase free of date-parsing defensive checks.
+DATE_PATTERN = r'^\d{4}-\d{2}-\d{2}$'
+
 class CreatePurchaseOrderRequest(BaseModel):
     backlog_item_id: str
-    supplier_name: str = Field(..., min_length=1)
+    supplier_name: str = Field(..., min_length=1, max_length=200)
     quantity: int = Field(..., gt=0)
     unit_cost: float = Field(..., ge=0)
-    expected_delivery_date: str
-    notes: Optional[str] = None
+    expected_delivery_date: str = Field(..., pattern=DATE_PATTERN)
+    notes: Optional[str] = Field(default=None, max_length=2000)
 
 class Task(BaseModel):
     id: str
@@ -131,9 +136,9 @@ class Task(BaseModel):
     created_date: str
 
 class CreateTaskRequest(BaseModel):
-    title: str = Field(..., min_length=1)
+    title: str = Field(..., min_length=1, max_length=200)
     priority: Literal['low', 'medium', 'high'] = 'medium'
-    due_date: Optional[str] = None
+    due_date: Optional[str] = Field(default=None, pattern=DATE_PATTERN)
 
 # API endpoints
 @app.get("/")
