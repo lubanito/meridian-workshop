@@ -29,7 +29,7 @@
             {{ t('nav.restocking') }}
           </router-link>
         </nav>
-        <button class="theme-toggle" @click="toggleTheme" :title="themeToggleLabel" :aria-label="themeToggleLabel">
+        <button class="theme-toggle" @click="toggleTheme" :title="themeToggleLabel" :aria-label="themeToggleLabel" :aria-pressed="isDark">
           {{ isDark ? '☀️' : '🌙' }}
         </button>
         <LanguageSwitcher />
