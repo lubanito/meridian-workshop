@@ -200,6 +200,7 @@ export default {
     title: 'パフォーマンスレポート',
     description: '四半期パフォーマンス指標と月次トレンドの表示',
     quarterlyPerformance: '四半期別パフォーマンス',
+    quarterlyMonthFilterNote: '四半期表示は単月フィルターでは絞り込まれません — 常に四半期全体を対象とします。',
     monthlyTrend: '月次収益トレンド',
     monthOverMonth: '前月比分析',
     table: {

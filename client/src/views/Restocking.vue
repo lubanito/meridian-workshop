@@ -324,16 +324,6 @@ export default {
       }, 0)
     )
 
-    // Sum excluding rows the over-budget walk has flagged — i.e. what would
-    // fit within the ceiling. Used for a "X within budget" hint in the UI.
-    const totalWithinBudget = computed(() =>
-      sortedRecommendations.value.reduce((sum, item) => {
-        if (overBudgetSkus.value.has(item.sku)) return sum
-        const qty = editedQtys.value[item.sku] ?? 0
-        return sum + qty * item.unit_cost
-      }, 0)
-    )
-
     const budgetPercent = computed(() => {
       // Use !(> 0) to handle NaN from partially-typed negative input
       if (!(budgetCeiling.value > 0)) return 0
@@ -363,6 +353,17 @@ export default {
       }
       return skus
     })
+
+    // Sum excluding rows the over-budget walk has flagged — i.e. what would
+    // fit within the ceiling. Defined after overBudgetSkus so the dependency
+    // reads top-to-bottom for a future maintainer.
+    const totalWithinBudget = computed(() =>
+      sortedRecommendations.value.reduce((sum, item) => {
+        if (overBudgetSkus.value.has(item.sku)) return sum
+        const qty = editedQtys.value[item.sku] ?? 0
+        return sum + qty * item.unit_cost
+      }, 0)
+    )
 
     // Draft-only preview: the button labelled "Preview Draft" assembles a
     // local summary so a buyer can review picks against the budget. Real

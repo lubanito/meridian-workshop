@@ -13,6 +13,9 @@
         <div class="card-header">
           <h3 class="card-title">{{ t('reports.quarterlyPerformance') }}</h3>
         </div>
+        <div v-if="monthFilterActive" class="card-note">
+          {{ t('reports.quarterlyMonthFilterNote') }}
+        </div>
         <div class="table-container">
           <table class="reports-table">
             <thead>
@@ -167,6 +170,13 @@ export default {
       Math.max(...monthlyData.value.map(m => m.revenue), 0)
     )
 
+    // True when the user picked a single month (e.g. 2025-01); the
+    // quarterly endpoint intentionally ignores this filter to avoid a
+    // quarter card that looks like 1/3 months. Surface the asymmetry.
+    const monthFilterActive = computed(() =>
+      selectedPeriod.value !== 'all' && !/^Q[1-4]-\d{4}$/.test(selectedPeriod.value)
+    )
+
     const loadData = async () => {
       try {
         loading.value = true
@@ -229,6 +239,7 @@ export default {
       loading, error,
       quarterlyData, monthlyData,
       totalRevenue, avgMonthlyRevenue, totalOrders, bestQuarter,
+      monthFilterActive,
       formatCurrency, formatMonth, getBarHeight,
       getFulfillmentClass, getChangeValue, getChangeClass, getGrowthRate
     }
@@ -259,6 +270,17 @@ export default {
   font-weight: 600;
   color: var(--color-text-heading);
   margin: 0;
+}
+
+.card-note {
+  font-size: 0.813rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-subtle);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-accent);
 }
 
 .reports-table {
