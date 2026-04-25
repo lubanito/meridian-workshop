@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
@@ -312,7 +312,7 @@ def get_monthly_trends(
     result.sort(key=lambda x: x['month'])
     return result
 
-# NOTE: Task and purchase-order endpoints below have no authentication.
+# FIXME(auth): Task and purchase-order endpoints have no authentication.
 # Before any production deployment, add auth middleware (e.g. OAuth2 bearer token check).
 @app.get("/api/tasks", response_model=List[Task])
 def get_tasks():
@@ -328,7 +328,7 @@ def create_task(req: CreateTaskRequest):
         "priority": req.priority,
         "due_date": req.due_date,
         "completed": False,
-        "created_date": datetime.now().strftime("%Y-%m-%d")
+        "created_date": datetime.now(timezone.utc).strftime("%Y-%m-%d")
     }
     tasks.append(task)
     return task
@@ -352,10 +352,15 @@ def toggle_task(task_id: str):
 
 @app.post("/api/purchase-orders", response_model=PurchaseOrder, status_code=201)
 def create_purchase_order(req: CreatePurchaseOrderRequest):
-    """Create a purchase order for a backlog item"""
+    """Create a purchase order for a backlog item.
+    Rejects duplicates: a backlog item can have at most one open PO. The
+    paired GET endpoint only returns the first match, so silently allowing a
+    second PO would hide it from the UI."""
     backlog = next((b for b in backlog_items if b["id"] == req.backlog_item_id), None)
     if not backlog:
         raise HTTPException(status_code=404, detail=f"Backlog item {req.backlog_item_id} not found")
+    if any(p["backlog_item_id"] == req.backlog_item_id for p in purchase_orders):
+        raise HTTPException(status_code=409, detail=f"A purchase order already exists for backlog item {req.backlog_item_id}")
     po = {
         "id": f"PO-{uuid.uuid4()}",
         "backlog_item_id": req.backlog_item_id,
@@ -364,7 +369,7 @@ def create_purchase_order(req: CreatePurchaseOrderRequest):
         "unit_cost": req.unit_cost,
         "expected_delivery_date": req.expected_delivery_date,
         "status": "Pending",
-        "created_date": datetime.now().strftime("%Y-%m-%d"),
+        "created_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "notes": req.notes
     }
     purchase_orders.append(po)

@@ -250,6 +250,7 @@ export default {
       total: '合計：'
     },
     generatePO: 'ドラフトをプレビュー',
+    draftHint: 'アプリ内プレビューのみ — 仕入先への発注は送信されません。',
     successMessage: '発注書草案を確認用に準備しました（まだ送信されていません）。'
   },
 

@@ -17,18 +17,20 @@ test.describe('Dashboard (Overview)', () => {
     const table = page.locator('table').filter({ hasText: 'Order ID' }).first();
     const rows = table.getByRole('row');
     await expect(rows.first()).toBeVisible();
-    await expect(await rows.count()).toBeGreaterThan(1); // header + at least 1 shortage
+    // header + at least 1 shortage row
+    await expect(rows.nth(1)).toBeVisible();
   });
 
   test('shortage table shows Create PO buttons', async ({ page }) => {
     const createPOButtons = page.getByRole('button', { name: 'Create PO' });
-    await expect(await createPOButtons.count()).toBeGreaterThan(0);
+    await expect(createPOButtons.first()).toBeVisible();
   });
 
   test('displays Top Products by Revenue table', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Top Products by Revenue' })).toBeVisible();
     const productTable = page.locator('table').filter({ hasText: 'Revenue' }).last();
-    await expect(await productTable.getByRole('row').count()).toBeGreaterThan(1); // header + products
+    // header + at least one product row
+    await expect(productTable.getByRole('row').nth(1)).toBeVisible();
   });
 
   test('filter bar renders all filter dropdowns', async ({ page }) => {

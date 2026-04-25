@@ -250,6 +250,7 @@ export default {
       total: 'Total:'
     },
     generatePO: 'Preview Draft',
+    draftHint: 'Builds an in-app preview only — no orders are submitted to suppliers.',
     successMessage: 'Draft purchase orders ready for review — not yet submitted.'
   },
 

@@ -131,6 +131,7 @@
         <button class="btn-primary" @click="generatePurchaseOrders">
           {{ t('restocking.generatePO') }}
         </button>
+        <span class="draft-hint">{{ t('restocking.draftHint') }}</span>
       </div>
 
       <div v-if="successMessage" class="success-alert">
@@ -207,14 +208,9 @@ export default {
 
         if (!isBelowReorder && !isIncreasing) continue
 
-        let priority
-        if (isBelowReorder && isIncreasing) {
-          priority = 'High'
-        } else if (isBelowReorder || isIncreasing) {
-          priority = 'Medium'
-        } else {
-          priority = 'Low'
-        }
+        // After the guard above, at least one signal is true — only High and
+        // Medium are reachable. Items not flagged on either signal are skipped.
+        const priority = isBelowReorder && isIncreasing ? 'High' : 'Medium'
 
         let recommended_qty = Math.max(item.reorder_point * 2 - item.quantity_on_hand, 0)
         if (demand && demand.forecasted_demand > item.quantity_on_hand) {
@@ -486,6 +482,15 @@ export default {
 
 .actions-row {
   margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.draft-hint {
+  font-size: 0.813rem;
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .btn-primary {
