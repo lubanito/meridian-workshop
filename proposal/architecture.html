@@ -151,6 +151,7 @@
   .sev-high { background: #fee2e2; color: #991b1b; }
   .sev-med { background: #fef3c7; color: #92400e; }
   .sev-low { background: #dbeafe; color: #1d4ed8; }
+  .sev-resolved { background: #d1fae5; color: #065f46; }
 
   /* Endpoint table */
   .endpoint { font-family: monospace; font-size: 12px; }
@@ -189,11 +190,12 @@
           <div class="box"><strong>Orders.vue</strong><span>Composition API</span></div>
           <div class="box"><strong>Spending.vue</strong><span>Composition API</span></div>
           <div class="box"><strong>Demand.vue</strong><span>Composition API</span></div>
-          <div class="box warn"><strong>⚠ Reports.vue</strong><span>Options API — inconsistent</span></div>
+          <div class="box"><strong>Reports.vue</strong><span>Composition API (rebuilt)</span></div>
+          <div class="box"><strong>Restocking.vue</strong><span>Composition API · NEW</span></div>
         </div>
         <div class="row">
-          <div class="box missing"><strong>✗ Tasks API calls</strong><span>No backend endpoints</span></div>
-          <div class="box missing"><strong>✗ Purchase Orders</strong><span>POST/GET not implemented</span></div>
+          <div class="box"><strong>Tasks API calls</strong><span>load · create · toggle · delete</span></div>
+          <div class="box"><strong>PurchaseOrderModal.vue</strong><span>create + view modes · NEW</span></div>
         </div>
       </div>
     </div>
@@ -221,8 +223,9 @@
           <div class="box warn"><strong>⚠ GET /api/backlog</strong><span>static · returns has_purchase_order boolean</span></div>
           <div class="box"><strong>GET /api/demand</strong><span>static</span></div>
           <div class="box"><strong>GET /api/reports/*</strong><span>computed from orders</span></div>
-          <div class="box missing"><strong>✗ /api/tasks/*</strong><span>not implemented</span></div>
-          <div class="box missing"><strong>✗ POST /api/purchase-orders</strong><span>not implemented</span></div>
+          <div class="box"><strong>/api/tasks/*</strong><span>GET · POST · PATCH · DELETE</span></div>
+          <div class="box"><strong>POST /api/purchase-orders</strong><span>409 on duplicate</span></div>
+          <div class="box"><strong>GET /api/backlog/{id}/purchase-order</strong><span>nested route</span></div>
         </div>
       </div>
     </div>
@@ -326,17 +329,17 @@
       <tr>
         <td class="endpoint"><span class="method post">POST</span>/api/purchase-orders</td>
         <td>—</td>
-        <td><span class="tag-missing">not implemented</span></td>
+        <td>Validated via Pydantic; returns 409 on duplicate per backlog item</td>
       </tr>
       <tr>
-        <td class="endpoint"><span class="method get">GET</span>/api/purchase-orders/{id}</td>
+        <td class="endpoint"><span class="method get">GET</span>/api/backlog/{id}/purchase-order</td>
         <td>—</td>
-        <td><span class="tag-missing">not implemented</span></td>
+        <td>Single PO per backlog item (enforced at create time)</td>
       </tr>
       <tr>
         <td class="endpoint"><span class="method get">GET</span>/api/tasks</td>
         <td>—</td>
-        <td><span class="tag-missing">not implemented</span></td>
+        <td>List · POST creates · PATCH toggles · DELETE removes</td>
       </tr>
     </tbody>
   </table>
@@ -351,49 +354,49 @@
     </thead>
     <tbody>
       <tr>
-        <td><span class="sev sev-high">High</span></td>
+        <td><span class="sev sev-resolved">Resolved</span></td>
         <td>Reports.vue</td>
-        <td>Uses Options API while the entire rest of the codebase uses Composition API. Filters not wired up — previous vendor left this incomplete.</td>
+        <td>Rebuilt on Composition API; all four filters wired through <code>watch(..., { immediate: true })</code> against shared <code>useFilters</code> state.</td>
       </tr>
       <tr>
-        <td><span class="sev sev-high">High</span></td>
+        <td><span class="sev sev-resolved">Resolved</span></td>
         <td>Backlog API</td>
-        <td>Backend returns <code>has_purchase_order</code> (boolean), but frontend checks <code>item.purchase_order_id</code>. Conditional rendering on Dashboard is broken.</td>
+        <td>Frontend now reads <code>item.has_purchase_order</code> (matches backend); Create PO / View PO buttons gate on the same flag.</td>
       </tr>
       <tr>
-        <td><span class="sev sev-high">High</span></td>
+        <td><span class="sev sev-resolved">Resolved</span></td>
         <td>Purchase Orders</td>
-        <td><code>POST /api/purchase-orders</code> and <code>GET /api/purchase-orders/{id}</code> not implemented. PurchaseOrderModal is non-functional.</td>
+        <td><code>POST /api/purchase-orders</code> + <code>GET /api/backlog/{id}/purchase-order</code> implemented; PurchaseOrderModal handles both create and view modes with focus trap and Escape dismissal.</td>
       </tr>
       <tr>
-        <td><span class="sev sev-med">Medium</span></td>
-        <td>Spending API</td>
-        <td>All <code>/api/spending/*</code> endpoints return static data — warehouse/category/period filters have no effect on spending views.</td>
-      </tr>
-      <tr>
-        <td><span class="sev sev-med">Medium</span></td>
-        <td>Reports filters</td>
-        <td>Reports page filter integration incomplete — some or all of the 4 filters do not trigger data reloads.</td>
-      </tr>
-      <tr>
-        <td><span class="sev sev-med">Medium</span></td>
+        <td><span class="sev sev-resolved">Resolved</span></td>
         <td>Tasks API</td>
-        <td><code>/api/tasks/*</code> endpoints not implemented. App.vue loads tasks on mount and fails silently (console.error only).</td>
+        <td><code>/api/tasks/*</code> endpoints implemented; App.vue load/create/toggle/delete all routed through the API client with i18n error fallback.</td>
       </tr>
       <tr>
-        <td><span class="sev sev-low">Low</span></td>
-        <td>i18n</td>
-        <td>Some views/modules not covered by i18n — Tokyo team sees English-only content in certain screens.</td>
-      </tr>
-      <tr>
-        <td><span class="sev sev-low">Low</span></td>
+        <td><span class="sev sev-resolved">Resolved</span></td>
         <td>Quarter mapping</td>
-        <td>Q-format quarter mapping is hardcoded to 2025. Will fail silently for other years.</td>
+        <td>Quarterly bucketing now derives <code>Q{(month-1)//3 + 1}-{year}</code> per row; works for any year. The static <code>QUARTER_MAP</code> covering 2025 is the demo dataset's range only.</td>
       </tr>
       <tr>
-        <td><span class="sev sev-low">Low</span></td>
-        <td>No tests</td>
-        <td>Zero automated test coverage — no unit, integration, or end-to-end tests delivered.</td>
+        <td><span class="sev sev-resolved">Resolved</span></td>
+        <td>i18n</td>
+        <td>EN + JA coverage extended across Reports, Restocking, PurchaseOrderModal, and the Dashboard KPI tags.</td>
+      </tr>
+      <tr>
+        <td><span class="sev sev-resolved">Resolved</span></td>
+        <td>Tests</td>
+        <td>Playwright E2E suite added under <code>tests/e2e/specs/</code> — five spec files covering navigation, dashboard, inventory, reports, restocking; locale pinned to en-US in <code>playwright.config.js</code>.</td>
+      </tr>
+      <tr>
+        <td><span class="sev sev-med">Open</span></td>
+        <td>Spending API</td>
+        <td>All <code>/api/spending/*</code> endpoints still return static data — warehouse/category/period filters have no effect on spending views. Out of scope for R1; tracked for follow-up.</td>
+      </tr>
+      <tr>
+        <td><span class="sev sev-med">Open</span></td>
+        <td>Auth + persistence</td>
+        <td>Task / PO endpoints have no authentication and use module-level Python lists for storage. <code>FIXME(auth)</code> and <code>FIXME(persistence)</code> in <code>main.py</code> — must be addressed before any production deployment.</td>
       </tr>
     </tbody>
   </table>
