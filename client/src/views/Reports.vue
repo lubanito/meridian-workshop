@@ -170,12 +170,13 @@ export default {
       Math.max(...monthlyData.value.map(m => m.revenue), 0)
     )
 
-    // True when the user picked a single month (e.g. 2025-01); the
-    // quarterly endpoint intentionally ignores this filter to avoid a
-    // quarter card that looks like 1/3 months. Surface the asymmetry.
-    const monthFilterActive = computed(() =>
-      selectedPeriod.value !== 'all' && !/^Q[1-4]-\d{4}$/.test(selectedPeriod.value)
-    )
+    // True when the user picked any specific period — currently the
+    // FilterBar only emits month values (YYYY-MM) or 'all', so any
+    // non-'all' value is a single month, and the quarterly endpoint
+    // intentionally ignores the filter to avoid showing a partial
+    // quarter. If quarter-format options (Q1-YYYY) are added to
+    // FilterBar later, this needs an exclusion for those values.
+    const monthFilterActive = computed(() => selectedPeriod.value !== 'all')
 
     const loadData = async () => {
       try {
