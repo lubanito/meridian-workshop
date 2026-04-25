@@ -461,14 +461,16 @@ export default {
       // Count orders for each month
       if (Array.isArray(allOrders.value)) {
         allOrders.value.forEach(order => {
-          if (order && order.order_date) {
-            const date = new Date(order.order_date)
-            const monthIndex = date.getMonth()
-            // Check if monthIndex is valid (0-11)
-            if (!isNaN(monthIndex) && monthIndex >= 0 && monthIndex <= 11) {
-              const monthName = monthNames[monthIndex]
-              monthMap[monthName].orders++
-            }
+          if (!order?.order_date) return
+          const date = new Date(order.order_date)
+          // Invalid Date returns NaN from getTime() — getMonth() still
+          // returns NaN here, but checking the time guard up front is the
+          // canonical "is this date parseable?" test.
+          if (isNaN(date.getTime())) return
+          const monthIndex = date.getMonth()
+          if (monthIndex >= 0 && monthIndex <= 11) {
+            const monthName = monthNames[monthIndex]
+            monthMap[monthName].orders++
           }
         })
       }
@@ -528,16 +530,20 @@ export default {
       })
 
       // Convert to array, sort by first order date (earliest first = January at top), then by revenue, and take top 12
+      // toTime returns a finite number for valid dates and Number.MAX_SAFE_INTEGER
+      // for null/undefined/'' or unparseable strings, so the comparator can't
+      // ever return NaN (which would give an implementation-defined sort order).
+      const toTime = (s) => {
+        if (!s) return Number.MAX_SAFE_INTEGER
+        const t = new Date(s).getTime()
+        return Number.isFinite(t) ? t : Number.MAX_SAFE_INTEGER
+      }
       return Object.values(productMap)
         .sort((a, b) => {
-          // Sort by first order date (earliest first)
-          // This ensures products first ordered in January appear before those first ordered in December
-          const dateA = new Date(a.firstOrderDate || '9999-12-31')
-          const dateB = new Date(b.firstOrderDate || '9999-12-31')
-          if (dateA.getTime() !== dateB.getTime()) {
-            return dateA.getTime() - dateB.getTime() // Earlier dates come first
-          }
-          // If dates are equal, sort by revenue (highest first)
+          const tA = toTime(a.firstOrderDate)
+          const tB = toTime(b.firstOrderDate)
+          if (tA !== tB) return tA - tB
+          // If dates tie, sort by revenue (highest first)
           return b.revenue - a.revenue
         })
         .slice(0, 12)

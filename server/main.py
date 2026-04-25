@@ -1,3 +1,4 @@
+import os
 import uuid
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
@@ -56,11 +57,16 @@ def apply_filters(items: list, warehouse: Optional[str] = None, category: Option
 
     return filtered
 
-# CORS middleware — allow_credentials must be False when allow_origins=["*"]
+# CORS middleware. ALLOWED_ORIGINS env var lets a deploy override the
+# wildcard (e.g. "https://meridian.example.com,https://staging.example.com").
+# Wildcard is dev-only; allow_credentials must be False with "*" — browsers
+# reject the credentialed-wildcard combination per the CORS spec.
+_ALLOWED_ORIGINS_RAW = os.getenv("ALLOWED_ORIGINS", "*")
+ALLOWED_ORIGINS = [o.strip() for o in _ALLOWED_ORIGINS_RAW.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=ALLOWED_ORIGINS != ["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -300,7 +306,17 @@ def get_quarterly_reports(
             data['fulfillment_rate'] = round((data['delivered_orders'] / data['total_orders']) * 100, 1)
         result.append(data)
 
-    result.sort(key=lambda x: x['quarter'])
+    # Sort chronologically by (year, quarter-num) tuple. A naive
+    # lexicographic sort on the 'Q1-2025' string would break across years —
+    # 'Q4-2025' sorts after 'Q1-2026' alphabetically.
+    def _quarter_key(row):
+        q = row['quarter']  # 'Q1-2025'
+        try:
+            num, year = q[1:].split('-')
+            return (int(year), int(num))
+        except (ValueError, IndexError):
+            return (0, 0)
+    result.sort(key=_quarter_key)
     return result
 
 @app.get("/api/reports/monthly-trends")
