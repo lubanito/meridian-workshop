@@ -377,6 +377,12 @@ export default {
     selectLanguage: '言語を選択'
   },
 
+  // Theme toggle
+  theme: {
+    switchToLight: 'ライトモードに切り替え',
+    switchToDark: 'ダークモードに切り替え'
+  },
+
   // Common
   common: {
     loading: '読み込み中...',

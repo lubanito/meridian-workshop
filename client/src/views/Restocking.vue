@@ -93,7 +93,7 @@
                     type="number"
                     min="0"
                     class="qty-input"
-                    @input="editedQtys[item.sku] = Math.max(0, Number($event.target.value) || 0)"
+                    @input="updateQty(item.sku, $event.target.value)"
                   />
                 </td>
                 <td>{{ formatCurrency(item.unit_cost) }}</td>
@@ -233,6 +233,12 @@ export default {
       return results
     })
 
+    // Coerce + floor at 0 in one place rather than inline in the template,
+    // so the rule is grep-able and unit-testable.
+    const updateQty = (sku, raw) => {
+      editedQtys.value[sku] = Math.max(0, Number(raw) || 0)
+    }
+
     // Keep editedQtys in sync with recommendations (reset on data reload)
     watch(recommendations, (newRecs) => {
       const qtys = {}
@@ -331,6 +337,7 @@ export default {
       error,
       budgetCeiling,
       editedQtys,
+      updateQty,
       sortedRecommendations,
       belowReorderCount,
       increasingDemandCount,

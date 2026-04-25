@@ -79,7 +79,7 @@
                   <div class="detail-item">
                     <div class="detail-label">{{ t('purchaseOrder.status') }}</div>
                     <div class="detail-value">
-                      <span class="badge" :class="poData.status.toLowerCase()">{{ poData.status }}</span>
+                      <span class="badge" :class="poData.status?.toLowerCase()">{{ poData.status }}</span>
                     </div>
                   </div>
                   <div class="detail-item">

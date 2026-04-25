@@ -377,6 +377,12 @@ export default {
     selectLanguage: 'Select Language'
   },
 
+  // Theme toggle
+  theme: {
+    switchToLight: 'Switch to light mode',
+    switchToDark: 'Switch to dark mode'
+  },
+
   // Common
   common: {
     loading: 'Loading...',

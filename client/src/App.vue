@@ -29,7 +29,7 @@
             {{ t('nav.restocking') }}
           </router-link>
         </nav>
-        <button class="theme-toggle" @click="toggleTheme" :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'" :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'">
+        <button class="theme-toggle" @click="toggleTheme" :title="themeToggleLabel" :aria-label="themeToggleLabel">
           {{ isDark ? '☀️' : '🌙' }}
         </button>
         <LanguageSwitcher />
@@ -91,6 +91,9 @@ export default {
 
     // Dark mode
     const isDark = ref(false)
+    const themeToggleLabel = computed(() =>
+      isDark.value ? t('theme.switchToLight') : t('theme.switchToDark')
+    )
 
     const applyTheme = (dark) => {
       if (dark) {
@@ -173,7 +176,8 @@ export default {
       deleteTask,
       toggleTask,
       isDark,
-      toggleTheme
+      toggleTheme,
+      themeToggleLabel
     }
   }
 }
