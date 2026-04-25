@@ -24,11 +24,15 @@ const toServerTask = ({ title, priority, dueDate }) => ({
   due_date: dueDate || null
 })
 
-const reportParams = (filters) => {
+// `includeMonth: false` is used for endpoints that intentionally don't
+// scope by month (e.g. /reports/quarterly always covers a full quarter).
+// Stripping it client-side guards against a future backend change
+// silently honouring the param.
+const reportParams = (filters, { includeMonth = true } = {}) => {
   const params = new URLSearchParams()
   if (filters.warehouse && filters.warehouse !== 'all') params.append('warehouse', filters.warehouse)
   if (filters.category && filters.category !== 'all') params.append('category', filters.category)
-  if (filters.month && filters.month !== 'all') params.append('month', filters.month)
+  if (includeMonth && filters.month && filters.month !== 'all') params.append('month', filters.month)
   return params
 }
 
@@ -105,7 +109,7 @@ export const api = {
   },
 
   async getQuarterlyReports(filters = {}) {
-    const response = await axios.get(buildUrl('/reports/quarterly', reportParams(filters)))
+    const response = await axios.get(buildUrl('/reports/quarterly', reportParams(filters, { includeMonth: false })))
     return response.data
   },
 
