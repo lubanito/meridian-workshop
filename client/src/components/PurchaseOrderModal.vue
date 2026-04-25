@@ -25,19 +25,19 @@
               <div class="form-grid">
                 <div class="form-field">
                   <label class="form-label">{{ t('purchaseOrder.supplierName') }}</label>
-                  <input v-model="form.supplier_name" type="text" class="form-input" :placeholder="t('purchaseOrder.supplierPlaceholder')" />
+                  <input v-model="form.supplier_name" type="text" required class="form-input" :placeholder="t('purchaseOrder.supplierPlaceholder')" />
                 </div>
                 <div class="form-field">
                   <label class="form-label">{{ t('purchaseOrder.quantity') }}</label>
-                  <input v-model.number="form.quantity" type="number" min="1" class="form-input" />
+                  <input v-model.number="form.quantity" type="number" min="1" required class="form-input" />
                 </div>
                 <div class="form-field">
                   <label class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
-                  <input v-model.number="form.unit_cost" type="number" min="0" step="0.01" class="form-input" />
+                  <input v-model.number="form.unit_cost" type="number" min="0" step="0.01" required class="form-input" />
                 </div>
                 <div class="form-field">
                   <label class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
-                  <input v-model="form.expected_delivery_date" type="date" class="form-input" />
+                  <input v-model="form.expected_delivery_date" type="date" required class="form-input" />
                 </div>
               </div>
               <div class="form-field full-width">

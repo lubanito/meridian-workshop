@@ -106,7 +106,9 @@ export default {
 
     const toggleTheme = () => {
       const next = !isDark.value
-      localStorage.setItem('theme', next ? 'dark' : 'light')
+      // localStorage may throw in sandboxed iframes / private browsing —
+      // never let persistence failure block the theme switch itself.
+      try { localStorage.setItem('theme', next ? 'dark' : 'light') } catch {}
       applyTheme(next)
     }
 
@@ -161,7 +163,8 @@ export default {
 
     onMounted(() => {
       loadTasks()
-      const saved = localStorage.getItem('theme')
+      let saved = null
+      try { saved = localStorage.getItem('theme') } catch {}
       if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         applyTheme(true)
       }
