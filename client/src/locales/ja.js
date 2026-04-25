@@ -250,7 +250,7 @@ export default {
       total: '合計：'
     },
     generatePO: '発注書を生成',
-    successMessage: '発注書が正常に生成されました。'
+    successMessage: '発注書草案を確認用に準備しました。'
   },
 
   // Filters

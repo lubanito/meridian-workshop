@@ -8,7 +8,8 @@ const translations = {
 }
 
 // Load saved locale from localStorage, default to 'en'
-const savedLocale = localStorage.getItem('app-locale') || 'en'
+// Wrapped in try/catch: localStorage may throw in sandboxed iframes or private mode
+const savedLocale = (() => { try { return localStorage.getItem('app-locale') || 'en' } catch { return 'en' } })()
 const currentLocale = ref(savedLocale)
 
 // Currency is automatically set based on locale (en -> USD, ja -> JPY)
@@ -60,7 +61,7 @@ export function useI18n() {
   const setLocale = (locale) => {
     if (translations[locale]) {
       currentLocale.value = locale
-      localStorage.setItem('app-locale', locale)
+      try { localStorage.setItem('app-locale', locale) } catch {}
     }
   }
 

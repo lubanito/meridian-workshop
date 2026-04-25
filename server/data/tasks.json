@@ -1,0 +1,26 @@
+[
+  {
+    "id": "task-001",
+    "title": "Review Q4 inventory levels",
+    "priority": "high",
+    "due_date": "2026-04-30",
+    "completed": false,
+    "created_date": "2026-04-20"
+  },
+  {
+    "id": "task-002",
+    "title": "Approve restocking purchase orders",
+    "priority": "high",
+    "due_date": "2026-04-28",
+    "completed": false,
+    "created_date": "2026-04-21"
+  },
+  {
+    "id": "task-003",
+    "title": "Schedule supplier meeting",
+    "priority": "medium",
+    "due_date": "2026-05-05",
+    "completed": false,
+    "created_date": "2026-04-22"
+  }
+]

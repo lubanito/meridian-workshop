@@ -304,12 +304,14 @@ import { useI18n } from '../composables/useI18n'
 import { formatCurrency } from '../utils/currency'
 import ProductDetailModal from '../components/ProductDetailModal.vue'
 import BacklogDetailModal from '../components/BacklogDetailModal.vue'
+import PurchaseOrderModal from '../components/PurchaseOrderModal.vue'
 
 export default {
   name: 'Dashboard',
   components: {
     ProductDetailModal,
     BacklogDetailModal,
+    PurchaseOrderModal,
   },
   setup() {
     const { t, currentCurrency, translateProductName, translateWarehouse } = useI18n()
@@ -337,6 +339,7 @@ export default {
       getCurrentFilters
     } = useFilters()
 
+    // Hardcoded stubs — no API endpoint exposes fulfilled count or fill rate yet
     const ordersData = ref({ fulfilled: 187, goal: 200 })
     const fillRate = ref(96.8)
 
@@ -663,11 +666,14 @@ export default {
     }
 
     const handlePOCreated = (poData) => {
-      // Update the backlog item with the new PO ID
-      const item = allBacklogItems.value.find(b => b.id === poData.backlog_item_id)
-      if (item) {
-        item.purchase_order_id = poData.id
-        item.purchase_order = poData
+      const idx = allBacklogItems.value.findIndex(b => b.id === poData.backlog_item_id)
+      if (idx !== -1) {
+        allBacklogItems.value[idx] = {
+          ...allBacklogItems.value[idx],
+          purchase_order_id: poData.id,
+          purchase_order: poData,
+          has_purchase_order: true
+        }
       }
       showPOModal.value = false
     }

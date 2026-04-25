@@ -250,7 +250,7 @@ export default {
       total: 'Total:'
     },
     generatePO: 'Generate Purchase Orders',
-    successMessage: 'Purchase orders generated successfully.'
+    successMessage: 'Purchase order draft prepared for review.'
   },
 
   // Filters
