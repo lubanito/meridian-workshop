@@ -173,8 +173,8 @@ export default {
           api.getQuarterlyReports(filters),
           api.getMonthlyTrends(filters)
         ])
-      } catch (err) {
-        error.value = 'Failed to load reports: ' + err.message
+      } catch {
+        error.value = t('common.errorLoadingData')
       } finally {
         loading.value = false
       }

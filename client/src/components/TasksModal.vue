@@ -143,10 +143,8 @@ export default {
       dueDate: ''
     })
 
-    const sortedTasks = computed(() => {
-      // Don't sort - just return tasks in their current order (newest first)
-      return [...props.tasks]
-    })
+    // No sort: render in the order the parent provides (newest first).
+    const sortedTasks = computed(() => props.tasks)
 
     const close = () => {
       emit('close')
@@ -168,7 +166,9 @@ export default {
     }
 
     const formatDueDate = (dateString) => {
+      if (!dateString) return '—'
       const date = new Date(dateString)
+      if (isNaN(date.getTime())) return '—'
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const dueDate = new Date(date)
@@ -195,10 +195,12 @@ export default {
 
     const getStatusClass = (dueDate, status) => {
       if (status === 'completed') return 'completed'
+      if (!dueDate) return 'upcoming'
 
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const due = new Date(dueDate)
+      if (isNaN(due.getTime())) return 'upcoming'
       due.setHours(0, 0, 0, 0)
 
       const diffTime = due - today

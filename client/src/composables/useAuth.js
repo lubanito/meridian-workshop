@@ -13,6 +13,9 @@ const baseUserData = {
 // useI18n returns module-level singleton refs, so it's safe to grab the
 // locale ref once at module scope. The computed below stays reactive to
 // locale changes because it reads currentLocale.value.
+// TODO: if useI18n is ever refactored to use Vue's inject(), this call must
+// move into useAuth() (a setup-context function) — module-scope inject()
+// throws "inject() can only be used inside setup()".
 const { currentLocale } = useI18n()
 
 // Mock current user data with language-aware fields.

@@ -180,7 +180,7 @@
                   <th>{{ t('dashboard.inventoryShortages.shortage') }}</th>
                   <th>{{ t('dashboard.inventoryShortages.daysDelayed') }}</th>
                   <th>{{ t('dashboard.inventoryShortages.priority') }}</th>
-                  <th>Actions</th>
+                  <th>{{ t('dashboard.inventoryShortages.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -214,14 +214,14 @@
                       @click.stop="openPOModal(item)"
                       class="po-button create"
                     >
-                      Create PO
+                      {{ t('dashboard.inventoryShortages.createPO') }}
                     </button>
                     <button
                       v-else
                       @click.stop="viewPO(item)"
                       class="po-button view"
                     >
-                      View PO
+                      {{ t('dashboard.inventoryShortages.viewPO') }}
                     </button>
                   </td>
                 </tr>
@@ -297,7 +297,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
@@ -349,13 +349,6 @@ export default {
         return monthlyGoal * 12 // $9,600,000 for the full year
       }
       return monthlyGoal // $800,000 for a single month
-    })
-
-    const revenueGoalDisplay = computed(() => {
-      if (revenueGoal.value >= 1000000) {
-        return `$${(revenueGoal.value / 1000000).toFixed(1)}M`
-      }
-      return `$${(revenueGoal.value / 1000).toFixed(0)}K`
     })
 
     const statusData = computed(() => {
@@ -565,6 +558,7 @@ export default {
     const loadData = async () => {
       const currentId = ++loadId
       loading.value = true
+      error.value = null
       try {
         const filters = getCurrentFilters()
         const [summaryData, ordersData, inventoryData, backlogData] = await Promise.all([
@@ -578,10 +572,9 @@ export default {
         allOrders.value = ordersData
         inventoryItems.value = inventoryData
         allBacklogItems.value = backlogData
-        error.value = null
       } catch (err) {
         if (currentId !== loadId) return
-        error.value = 'Failed to load dashboard data: ' + err.message
+        error.value = t('common.errorLoadingData')
       } finally {
         if (currentId === loadId) loading.value = false
       }
@@ -693,12 +686,7 @@ export default {
       showPOModal.value = false
     }
 
-    // Watch for filter changes and reload data
-    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], () => {
-      loadData()
-    })
-
-    onMounted(loadData)
+    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], loadData, { immediate: true })
 
     return {
       t,
@@ -723,7 +711,6 @@ export default {
       translatePriority,
       formatDate,
       revenueGoal,
-      revenueGoalDisplay,
       showProductModal,
       selectedProduct,
       showProductDetail,

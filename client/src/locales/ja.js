@@ -57,7 +57,10 @@ export default {
       daysDelayed: '遅延日数',
       priority: '優先度',
       unitsShort: '単位不足',
-      days: '日'
+      days: '日',
+      actions: 'アクション',
+      createPO: '発注書作成',
+      viewPO: '発注書を見る'
     },
     topProducts: {
       title: '収益別トップ製品',

@@ -56,7 +56,7 @@
                     <div class="items-dropdown">
                       <div v-for="item in order.items" :key="item.sku" class="item-entry">
                         <span class="item-name">{{ translateProductName(item.name) }}</span>
-                        <span class="item-meta">{{ t('orders.quantity') }}: {{ item.quantity }} @ {{ currencySymbol }}{{ item.unit_price }}</span>
+                        <span class="item-meta">{{ t('orders.quantity') }}: {{ item.quantity }} @ {{ formatCurrency(item.unit_price) }}</span>
                       </div>
                     </div>
                   </details>
@@ -68,7 +68,7 @@
                 </td>
                 <td class="col-date">{{ formatDate(order.order_date) }}</td>
                 <td class="col-date">{{ formatDate(order.expected_delivery) }}</td>
-                <td class="col-value"><strong>{{ currencySymbol }}{{ order.total_value.toLocaleString() }}</strong></td>
+                <td class="col-value"><strong>{{ formatCurrency(order.total_value) }}</strong></td>
               </tr>
             </tbody>
           </table>
@@ -87,11 +87,8 @@ import { useI18n } from '../composables/useI18n'
 export default {
   name: 'Orders',
   setup() {
-    const { t, currentLocale, currentCurrency, translateProductName, translateCustomerName } = useI18n()
+    const { t, currentLocale, formatCurrency, translateProductName, translateCustomerName } = useI18n()
 
-    const currencySymbol = computed(() => {
-      return currentCurrency.value === 'JPY' ? '¥' : '$'
-    })
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
@@ -106,8 +103,9 @@ export default {
     } = useFilters()
 
     const loadOrders = async () => {
+      loading.value = true
+      error.value = null
       try {
-        loading.value = true
         const filters = getCurrentFilters()
         const fetchedOrders = await api.getOrders(filters)
 
@@ -117,8 +115,8 @@ export default {
           const dateB = new Date(b.order_date)
           return dateA - dateB
         })
-      } catch (err) {
-        error.value = 'Failed to load orders: ' + err.message
+      } catch {
+        error.value = t('common.errorLoadingData')
       } finally {
         loading.value = false
       }
@@ -167,7 +165,7 @@ export default {
       statusCounts,
       getOrderStatusClass,
       formatDate,
-      currencySymbol,
+      formatCurrency,
       translateProductName,
       translateCustomerName
     }

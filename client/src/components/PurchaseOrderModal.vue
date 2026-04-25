@@ -129,7 +129,9 @@ const { t, formatCurrency } = useI18n()
 
 const shortage = computed(() => {
   if (!props.backlogItem) return 0
-  return props.backlogItem.quantity_needed - props.backlogItem.quantity_available
+  // Floor at zero so a partial-fulfillment item (available > needed) doesn't
+  // pre-fill the form with a negative quantity that the min=1 input rejects.
+  return Math.max(0, props.backlogItem.quantity_needed - props.backlogItem.quantity_available)
 })
 
 const form = ref({
