@@ -206,7 +206,7 @@
                     </span>
                   </td>
                   <td @click="showBacklogDetail(item)" style="cursor: pointer;">
-                    <span :class="['badge', item.priority]">
+                    <span :class="['badge', priorityClass(item.priority)]">
                       {{ translatePriority(item.priority) }}
                     </span>
                   </td>
@@ -648,6 +648,13 @@ export default {
       return priorityMap[priority] || priority
     }
 
+    // Allowlist API priority strings -> known badge classes so an
+    // unexpected value can't inject an arbitrary class on the span.
+    const priorityClass = (priority) => {
+      const allowed = { high: 'high', medium: 'medium', low: 'low' }
+      return allowed[(priority || '').toLowerCase()] || 'low'
+    }
+
     const formatDate = (dateString) => {
       if (!dateString) return '-'
       const date = new Date(dateString)
@@ -721,6 +728,7 @@ export default {
       translateCategory,
       translateStockLevel,
       translatePriority,
+      priorityClass,
       formatDate,
       revenueGoal,
       showProductModal,

@@ -77,19 +77,23 @@ test.describe('Dark mode (D3)', () => {
 });
 
 test.describe('i18n language switcher (D2)', () => {
+  // Wipe the persisted locale even if a test assertion fails — otherwise a
+  // failing test leaves localStorage in 'ja' and every subsequent test runs
+  // in Japanese, masking the original failure with cascading mismatches.
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => {
+      try { localStorage.removeItem('app-locale') } catch {}
+    });
+  });
+
   test('switching to Japanese changes page heading text', async ({ page }) => {
     await page.goto('/reports');
     await expect(page.getByRole('heading', { name: 'Performance Reports' })).toBeVisible();
 
-    // Open language switcher and select Japanese
     await page.locator('.language-button').click();
     await page.locator('.dropdown-item').filter({ hasText: '日本語' }).click();
 
     await expect(page.getByRole('heading', { name: 'パフォーマンスレポート' })).toBeVisible();
-
-    // Reset to English for subsequent tests
-    await page.locator('.language-button').click();
-    await page.locator('.dropdown-item').filter({ hasText: 'English' }).click();
   });
 
   test('switching to Japanese updates nav links', async ({ page }) => {
@@ -98,9 +102,5 @@ test.describe('i18n language switcher (D2)', () => {
     await page.locator('.dropdown-item').filter({ hasText: '日本語' }).click();
 
     await expect(page.getByRole('link', { name: 'レポート' })).toBeVisible();
-
-    // Reset
-    await page.locator('.language-button').click();
-    await page.locator('.dropdown-item').filter({ hasText: 'English' }).click();
   });
 });

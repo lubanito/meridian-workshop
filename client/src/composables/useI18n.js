@@ -155,11 +155,17 @@ export function useI18n() {
     return warehouseName
   }
 
+  // BCP 47 tag for the active locale ('en' -> 'en-US', 'ja' -> 'ja-JP').
+  // Use this for any Intl API call so the browser can't pick an
+  // arbitrary region for grouping / month-name styles.
+  const localeTag = computed(() => BCP47_TAGS[currentLocale.value] ?? currentLocale.value)
+
   return {
     t,
     setLocale,
     currentLocale: readonly(currentLocale),
     currentCurrency,
+    localeTag,
     formatCurrency,
     availableLocales,
     localeName,

@@ -140,7 +140,7 @@ export default {
     // status to the quarterly/monthly endpoints, so watching it would only
     // fire a redundant fetch and cause a loading flicker.
     const { selectedPeriod, selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, currentLocale, formatCurrency } = useI18n()
+    const { t, formatCurrency, localeTag } = useI18n()
 
     const loading = ref(true)
     const error = ref(null)
@@ -200,7 +200,7 @@ export default {
       const [year, month] = monthStr.split('-')
       const d = new Date(Number(year), Number(month) - 1, 1)
       if (isNaN(d.getTime())) return monthStr
-      return new Intl.DateTimeFormat(currentLocale.value, { month: 'short', year: 'numeric' }).format(d)
+      return new Intl.DateTimeFormat(localeTag.value, { month: 'short', year: 'numeric' }).format(d)
     }
 
     const getBarHeight = (revenue) => {
