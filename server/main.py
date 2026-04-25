@@ -63,6 +63,14 @@ def apply_filters(items: list, warehouse: Optional[str] = None, category: Option
 # reject the credentialed-wildcard combination per the CORS spec.
 _ALLOWED_ORIGINS_RAW = os.getenv("ALLOWED_ORIGINS", "*")
 ALLOWED_ORIGINS = [o.strip() for o in _ALLOWED_ORIGINS_RAW.split(",") if o.strip()]
+# Fail loud on a misconfigured env var (e.g. ALLOWED_ORIGINS="" or ",,,")
+# rather than starting up with an empty allowlist that silently rejects every
+# origin while still flipping allow_credentials on.
+if not ALLOWED_ORIGINS:
+    raise RuntimeError(
+        "ALLOWED_ORIGINS resolved to an empty list. Set it to '*' for dev or "
+        "to a comma-separated list of origins for production."
+    )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,

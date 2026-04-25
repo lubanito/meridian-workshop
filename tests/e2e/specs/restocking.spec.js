@@ -66,6 +66,14 @@ test.describe('Restocking page', () => {
 });
 
 test.describe('Dark mode (D3)', () => {
+  // Wipe the persisted theme so a test that flips to dark and then fails
+  // doesn't leave subsequent tests rendering on the dark surface.
+  test.afterEach(async ({ page }) => {
+    await page.evaluate(() => {
+      try { localStorage.removeItem('theme') } catch {}
+    });
+  });
+
   test('theme toggle adds data-theme=dark to html element', async ({ page }) => {
     await page.goto('/');
     await page.locator('.theme-toggle').click();

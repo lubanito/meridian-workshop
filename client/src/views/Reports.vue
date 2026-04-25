@@ -65,8 +65,10 @@
         </div>
       </div>
 
-      <!-- Month-over-Month Comparison -->
-      <div class="card">
+      <!-- Month-over-Month Comparison — only meaningful when the user is
+           looking at a multi-month range. With a single month selected,
+           every row except the first lacks a previous-month comparator. -->
+      <div v-if="!monthFilterActive" class="card">
         <div class="card-header">
           <h3 class="card-title">{{ t('reports.monthOverMonth') }}</h3>
         </div>

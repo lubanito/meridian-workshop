@@ -155,8 +155,11 @@ export default {
           const updatedTask = await api.toggleTask(taskId)
           const index = apiTasks.value.findIndex(t => t.id === taskId)
           if (index !== -1) {
-            // Replace the array reference so consumers shallow-watching
-            // apiTasks (e.g. the tasks computed) re-evaluate.
+            // Spread + replace produces a fresh array reference rather than
+            // mutating in place. Vue 3's deep proxy would re-track an
+            // index assignment, but the explicit replacement is more
+            // predictable for any consumer doing identity comparisons or
+            // shallow-watching the ref.
             const next = [...apiTasks.value]
             next[index] = updatedTask
             apiTasks.value = next
