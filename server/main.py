@@ -131,7 +131,7 @@ class CreatePurchaseOrderRequest(BaseModel):
     backlog_item_id: str
     supplier_name: str = Field(..., min_length=1, max_length=200)
     quantity: int = Field(..., gt=0)
-    unit_cost: float = Field(..., ge=0)
+    unit_cost: float = Field(..., gt=0)
     expected_delivery_date: str = Field(..., pattern=DATE_PATTERN)
     notes: Optional[str] = Field(default=None, max_length=2000)
 

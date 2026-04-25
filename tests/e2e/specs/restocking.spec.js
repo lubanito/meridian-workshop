@@ -33,7 +33,7 @@ test.describe('Restocking page', () => {
 
   test('table has data rows', async ({ page }) => {
     const rows = page.locator('tbody tr');
-    expect(await rows.count()).toBeGreaterThan(0);
+    await expect(rows.first()).toBeVisible();
   });
 
   test('progress bar is visible', async ({ page }) => {

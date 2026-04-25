@@ -161,7 +161,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
 import { api } from '../api'
@@ -194,6 +194,7 @@ export default {
     })
     const successMessage = ref(false)
     const emptySelectionNotice = ref(false)
+    let emptyNoticeTimer = null
     const confirmedItems = ref([])
     const confirmedTotal = ref(0)
     const successAlertRef = ref(null)
@@ -288,15 +289,13 @@ export default {
     const sortedRecommendations = computed(() => {
       // recommendations only ever assigns High or Medium (the !isBelowReorder
       // && !isIncreasing case is filtered out earlier), so Low is unused here.
+      // Sort is intentionally cost-independent so the row a buyer is
+      // typing into can't move while they edit. Cost is rendered as a
+      // read-only column for context.
       const priorityOrder = { High: 0, Medium: 1 }
       return [...recommendations.value].sort((a, b) => {
         const pDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
         if (pDiff !== 0) return pDiff
-        const aCost = (editedQtys.value[a.sku] ?? a.recommended_qty) * a.unit_cost
-        const bCost = (editedQtys.value[b.sku] ?? b.recommended_qty) * b.unit_cost
-        if (aCost !== bCost) return bCost - aCost
-        // Final tiebreaker on SKU keeps the row order stable while a user
-        // edits qtys — without this the table can jump as costs converge.
         return a.sku.localeCompare(b.sku)
       })
     })
@@ -377,12 +376,22 @@ export default {
       const selected = sortedRecommendations.value.filter(i => (editedQtys.value[i.sku] ?? 0) > 0)
       if (selected.length === 0) {
         // Surface a transient inline notice instead of a silent no-op so
-        // a user who's zeroed everything out gets feedback.
+        // a user who's zeroed everything out gets feedback. Track the
+        // timer so we can clear it on unmount and avoid a write on a
+        // destroyed component.
         emptySelectionNotice.value = true
         successMessage.value = false
         await nextTick()
-        setTimeout(() => { emptySelectionNotice.value = false }, 3500)
+        if (emptyNoticeTimer) clearTimeout(emptyNoticeTimer)
+        emptyNoticeTimer = setTimeout(() => {
+          emptySelectionNotice.value = false
+          emptyNoticeTimer = null
+        }, 3500)
         return
+      }
+      if (emptyNoticeTimer) {
+        clearTimeout(emptyNoticeTimer)
+        emptyNoticeTimer = null
       }
       emptySelectionNotice.value = false
       confirmedItems.value = selected.map(i => ({
@@ -398,6 +407,10 @@ export default {
     // FilterBar is mounted globally in App.vue; selectedLocation/selectedCategory
     // are module-level refs shared with every component that calls useFilters().
     watch([selectedLocation, selectedCategory], loadData, { immediate: true })
+
+    onUnmounted(() => {
+      if (emptyNoticeTimer) clearTimeout(emptyNoticeTimer)
+    })
 
     return {
       t,

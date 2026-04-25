@@ -2,9 +2,15 @@
   <Teleport to="body">
     <Transition name="modal">
       <div v-if="isOpen && backlogItem" class="modal-overlay" @click="$emit('close')">
-        <div class="modal-container" @click.stop>
+        <div
+          class="modal-container"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="po-modal-title"
+          @click.stop
+        >
           <div class="modal-header">
-            <h3 class="modal-title">{{ mode === 'create' ? t('purchaseOrder.createTitle') : t('purchaseOrder.viewTitle') }}</h3>
+            <h3 id="po-modal-title" class="modal-title">{{ mode === 'create' ? t('purchaseOrder.createTitle') : t('purchaseOrder.viewTitle') }}</h3>
             <button class="close-button" :aria-label="t('common.close')" @click="$emit('close')">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -113,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
 import { api } from '../api'
 import { useI18n } from '../composables/useI18n'
 
@@ -125,10 +131,34 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'po-created'])
 
-// WCAG 2.1 SC 2.1.2 — keyboard users must be able to dismiss the modal.
-// A document-level listener works regardless of which element has focus,
-// which matters because Teleport renders the overlay outside this component.
-const onEscape = (e) => { if (e.key === 'Escape') emit('close') }
+// Selector for "focusable" descendants when trapping Tab inside the modal.
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+// WCAG 2.1 SC 2.1.2 — keyboard users must be able to dismiss the modal
+// AND focus must stay within while it is open. A document-level listener
+// works regardless of which element has focus, which matters because
+// Teleport renders the overlay outside this component.
+const onKeydown = (e) => {
+  if (e.key === 'Escape') {
+    emit('close')
+    return
+  }
+  if (e.key !== 'Tab') return
+  // Find focusables inside the dialog's role="dialog" container.
+  const dialog = document.querySelector('.modal-container[aria-modal="true"]')
+  if (!dialog) return
+  const focusables = dialog.querySelectorAll(FOCUSABLE)
+  if (focusables.length === 0) return
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault()
+    first.focus()
+  }
+}
 
 const { t, formatCurrency } = useI18n()
 
@@ -166,9 +196,9 @@ const poLoadError = ref('')
 
 // Single watch handles both the keyboard-listener lifecycle and the
 // open-time form/PO setup, so the two concerns can't diverge.
-watch(() => props.isOpen, (open) => {
+watch(() => props.isOpen, async (open) => {
   if (open) {
-    document.addEventListener('keydown', onEscape)
+    document.addEventListener('keydown', onKeydown)
     if (props.mode === 'create') {
       form.value = {
         supplier_name: '',
@@ -181,14 +211,20 @@ watch(() => props.isOpen, (open) => {
     } else {
       loadPO()
     }
+    // Move focus into the dialog after it mounts so the focus-trap
+    // tab cycle has somewhere to start, and keyboard users land inside.
+    await nextTick()
+    const dialog = document.querySelector('.modal-container[aria-modal="true"]')
+    const firstFocusable = dialog?.querySelector(FOCUSABLE)
+    firstFocusable?.focus()
   } else {
-    document.removeEventListener('keydown', onEscape)
+    document.removeEventListener('keydown', onKeydown)
   }
 })
 
 // Belt-and-suspenders: if the component is destroyed while still open
 // (e.g. parent route changes mid-modal), make sure the listener is gone.
-onUnmounted(() => document.removeEventListener('keydown', onEscape))
+onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 
 const loadPO = async () => {
   poLoading.value = true
