@@ -313,14 +313,7 @@ export default {
     PurchaseOrderModal,
   },
   setup() {
-    const { t, currentLocale, currentCurrency, translateProductName, translateWarehouse } = useI18n()
-
-    const formatCurrency = (num) => Number(num).toLocaleString(currentLocale.value, {
-      style: 'currency',
-      currency: currentCurrency.value,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    })
+    const { t, currentLocale, currentCurrency, formatCurrency, translateProductName, translateWarehouse } = useI18n()
     const loading = ref(true)
     const error = ref(null)
     const summary = ref({})

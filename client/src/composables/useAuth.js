@@ -10,10 +10,17 @@ const baseUserData = {
   joinDate: '2022-03-15'
 }
 
-// Mock current user data with language-aware fields. We defer useI18n()
-// into the computed getter so module-load order doesn't depend on it.
+// useI18n returns module-level singleton refs, so it's safe to grab the
+// locale ref once at module scope. The computed below stays reactive to
+// locale changes because it reads currentLocale.value.
+const { currentLocale } = useI18n()
+
+// Mock current user data with language-aware fields.
+// Note: this rebuilds the full tasks array on every locale change, but
+// App.vue snapshots tasks into its own state at setup time, so a locale
+// switch only re-translates display labels — it does NOT restore tasks
+// the user has deleted or toggled in the current session.
 const currentUser = computed(() => {
-  const { currentLocale } = useI18n()
   const isJapanese = currentLocale.value === 'ja'
 
   return {

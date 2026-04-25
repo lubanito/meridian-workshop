@@ -125,14 +125,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'po-created'])
 
-const { t, currentLocale, currentCurrency } = useI18n()
-
-const formatCurrency = (num) => Number(num).toLocaleString(currentLocale.value, {
-  style: 'currency',
-  currency: currentCurrency.value,
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-})
+const { t, formatCurrency } = useI18n()
 
 const shortage = computed(() => {
   if (!props.backlogItem) return 0
@@ -224,7 +217,7 @@ const submit = async () => {
 }
 
 .modal-container {
-  background: white;
+  background: var(--color-surface);
   border-radius: 12px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
   max-width: 600px;
@@ -240,20 +233,20 @@ const submit = async () => {
   align-items: center;
   justify-content: space-between;
   padding: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .modal-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   margin: 0;
 }
 
 .close-button {
   background: none;
   border: none;
-  color: #64748b;
+  color: var(--color-text-muted);
   cursor: pointer;
   padding: 0.375rem;
   display: flex;
@@ -262,7 +255,7 @@ const submit = async () => {
   transition: all 0.15s;
 }
 
-.close-button:hover { background: #f1f5f9; color: #0f172a; }
+.close-button:hover { background: var(--color-bg-subtle); color: var(--color-text-heading); }
 
 .modal-body {
   flex: 1;
@@ -274,7 +267,7 @@ const submit = async () => {
 }
 
 .item-info {
-  background: #f8fafc;
+  background: var(--color-bg-subtle);
   border-radius: 8px;
   padding: 1rem;
   border-left: 3px solid #3b82f6;
@@ -282,7 +275,7 @@ const submit = async () => {
 
 .item-name {
   font-weight: 600;
-  color: #0f172a;
+  color: var(--color-text-heading);
   margin-bottom: 0.375rem;
 }
 
@@ -307,16 +300,16 @@ const submit = async () => {
 .form-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--color-text-secondary);
 }
 
 .form-input {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   font-size: 0.875rem;
-  color: #0f172a;
-  background: white;
+  color: var(--color-text-heading);
+  background: var(--color-surface);
   width: 100%;
   box-sizing: border-box;
   font-family: inherit;
@@ -340,7 +333,7 @@ textarea.form-input { resize: vertical; }
   padding: 0.625rem 0.875rem;
 }
 
-.loading-state { color: #64748b; text-align: center; padding: 2rem; }
+.loading-state { color: var(--color-text-muted); text-align: center; padding: 2rem; }
 .error-state {
   color: #dc2626;
   background: #fef2f2;
@@ -356,12 +349,12 @@ textarea.form-input { resize: vertical; }
 }
 
 .detail-item { display: flex; flex-direction: column; gap: 0.25rem; }
-.detail-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; }
-.detail-value { font-size: 0.938rem; color: #0f172a; font-weight: 500; }
+.detail-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-muted); }
+.detail-value { font-size: 0.938rem; color: var(--color-text-heading); font-weight: 500; }
 .detail-value.mono { font-family: monospace; color: #2563eb; }
 
 .po-notes { margin-top: 0.5rem; }
-.notes-text { color: #374151; font-size: 0.875rem; margin-top: 0.25rem; }
+.notes-text { color: var(--color-text-body); font-size: 0.875rem; margin-top: 0.25rem; }
 
 .badge { padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
 .badge.pending { background: #fef3c7; color: #92400e; }
@@ -370,7 +363,7 @@ textarea.form-input { resize: vertical; }
 
 .modal-footer {
   padding: 1.25rem 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
@@ -378,18 +371,18 @@ textarea.form-input { resize: vertical; }
 
 .btn-secondary {
   padding: 0.5rem 1.25rem;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-weight: 500;
   font-size: 0.875rem;
-  color: #334155;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.15s;
   font-family: inherit;
 }
 
-.btn-secondary:hover { background: #e2e8f0; }
+.btn-secondary:hover { background: var(--color-border); }
 
 .btn-primary {
   padding: 0.5rem 1.25rem;

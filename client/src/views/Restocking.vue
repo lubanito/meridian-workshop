@@ -159,7 +159,7 @@ export default {
   name: 'Restocking',
   setup() {
     const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, currentLocale, currentCurrency } = useI18n()
+    const { t, formatCurrency } = useI18n()
 
     const inventory = ref([])
     const demandForecasts = ref([])
@@ -232,14 +232,6 @@ export default {
       }
       return results
     })
-
-    const formatCurrency = (num) =>
-      Number(num).toLocaleString(currentLocale.value, {
-        style: 'currency',
-        currency: currentCurrency.value,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
 
     // Keep editedQtys in sync with recommendations (reset on data reload)
     watch(recommendations, (newRecs) => {

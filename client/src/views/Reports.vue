@@ -134,7 +134,7 @@ export default {
   name: 'Reports',
   setup() {
     const { selectedPeriod, selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, currentLocale, currentCurrency } = useI18n()
+    const { t, currentLocale, formatCurrency } = useI18n()
 
     const loading = ref(true)
     const error = ref(null)
@@ -181,15 +181,6 @@ export default {
     }
 
     watch([selectedPeriod, selectedLocation, selectedCategory], loadData, { immediate: true })
-
-    const formatCurrency = (num) => {
-      return Number(num).toLocaleString(currentLocale.value, {
-        style: 'currency',
-        currency: currentCurrency.value,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
-    }
 
     const formatMonth = (monthStr) => {
       const [year, month] = monthStr.split('-')

@@ -75,6 +75,16 @@ export function useI18n() {
     return names[currentLocale.value] || currentLocale.value
   })
 
+  // Locale + currency aware. Used by every view that renders a currency
+  // value — kept here to avoid four divergent copies of the same Intl call.
+  const formatCurrency = (num) =>
+    Number(num).toLocaleString(currentLocale.value, {
+      style: 'currency',
+      currency: currentCurrency.value,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })
+
   // Translate product names
   const translateProductName = (productName) => {
     if (currentLocale.value === 'ja' && translations.ja.productNames[productName]) {
@@ -120,6 +130,7 @@ export function useI18n() {
     setLocale,
     currentLocale: readonly(currentLocale),
     currentCurrency,
+    formatCurrency,
     availableLocales,
     localeName,
     translateProductName,
