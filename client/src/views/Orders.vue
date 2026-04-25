@@ -79,7 +79,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
@@ -124,10 +124,7 @@ export default {
       }
     }
 
-    // Watch for filter changes and reload data
-    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], () => {
-      loadOrders()
-    })
+    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], loadOrders, { immediate: true })
 
     const getOrdersByStatus = (status) => {
       return orders.value.filter(order => order.status === status)
@@ -154,8 +151,6 @@ export default {
         day: 'numeric'
       })
     }
-
-    onMounted(loadOrders)
 
     return {
       t,

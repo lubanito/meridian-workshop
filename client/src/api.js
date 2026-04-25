@@ -7,6 +7,21 @@ const buildUrl = (path, params) => {
   return qs ? `${API_BASE_URL}${path}?${qs}` : `${API_BASE_URL}${path}`
 }
 
+// Backend uses snake_case + boolean `completed`; the frontend uses
+// camelCase `dueDate` and string `status` ('pending' | 'completed') so that
+// API-backed and seeded mock tasks share one shape.
+const toClientTask = (t) => ({
+  ...t,
+  dueDate: t.due_date ?? t.dueDate ?? null,
+  status: t.completed ? 'completed' : 'pending'
+})
+
+const toServerTask = ({ title, priority, dueDate }) => ({
+  title,
+  priority,
+  due_date: dueDate || null
+})
+
 const reportParams = (filters) => {
   const params = new URLSearchParams()
   if (filters.warehouse && filters.warehouse !== 'all') params.append('warehouse', filters.warehouse)
@@ -99,12 +114,12 @@ export const api = {
 
   async getTasks() {
     const response = await axios.get(`${API_BASE_URL}/tasks`)
-    return response.data
+    return response.data.map(toClientTask)
   },
 
   async createTask(taskData) {
-    const response = await axios.post(`${API_BASE_URL}/tasks`, taskData)
-    return response.data
+    const response = await axios.post(`${API_BASE_URL}/tasks`, toServerTask(taskData))
+    return toClientTask(response.data)
   },
 
   async deleteTask(taskId) {
@@ -114,7 +129,7 @@ export const api = {
 
   async toggleTask(taskId) {
     const response = await axios.patch(`${API_BASE_URL}/tasks/${taskId}`)
-    return response.data
+    return toClientTask(response.data)
   },
 
   async createPurchaseOrder(purchaseOrderData) {

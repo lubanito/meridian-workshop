@@ -293,7 +293,9 @@ export default {
 
     const progressBarWidth = computed(() => Math.min(budgetPercent.value, 100))
 
-    // Compute which SKUs push the cumulative total over budget — O(n) via Set
+    // Walk recommendations top-to-bottom; flag any SKU whose cost would push
+    // the cumulative total over the ceiling. Skips zero-quantity rows so the
+    // running total only advances on real picks.
     const overBudgetSkus = computed(() => {
       if (budgetCeiling.value <= 0) return new Set()
       const skus = new Set()
@@ -301,7 +303,8 @@ export default {
       for (const rec of sortedRecommendations.value) {
         const qty = editedQtys.value[rec.sku] ?? 0
         const cost = qty * rec.unit_cost
-        if (cost > 0 && (running >= budgetCeiling.value || running + cost > budgetCeiling.value)) {
+        if (cost <= 0) continue
+        if (running + cost > budgetCeiling.value) {
           skus.add(rec.sku)
         } else {
           running += cost
@@ -310,6 +313,12 @@ export default {
       return skus
     })
 
+    // Draft-only preview: the button labelled "Preview Draft" assembles a
+    // local summary so a buyer can review picks against the budget. Real
+    // submission would post each line to POST /api/purchase-orders, but that
+    // endpoint expects a backlog_item_id and these recommendations come from
+    // inventory + demand, not the backlog — so we keep this in-memory and
+    // surface a "not yet submitted" banner.
     const generatePurchaseOrders = async () => {
       const selected = recommendations.value.filter(i => (editedQtys.value[i.sku] ?? 0) > 0)
       if (selected.length === 0) return
@@ -495,10 +504,12 @@ export default {
   background: #1d4ed8;
 }
 
+/* Draft-state alert (amber, not green) — the action is a preview, not a real submission */
 .success-alert {
-  background: #d1fae5;
-  border: 1px solid #6ee7b7;
-  color: #065f46;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #d97706;
+  color: #78350f;
   padding: 1.25rem 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.25rem;
@@ -516,8 +527,8 @@ export default {
 }
 
 [data-theme="dark"] .success-alert {
-  background: rgba(5, 150, 105, 0.15);
-  border-color: #059669;
-  color: #6ee7b7;
+  background: rgba(217, 119, 6, 0.15);
+  border-color: #d97706;
+  color: #fcd34d;
 }
 </style>
