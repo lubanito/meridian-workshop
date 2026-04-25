@@ -24,9 +24,19 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          show_full_output: true
+          allowed_tools: >-
+            mcp__github__get_pull_request,
+            mcp__github__get_pull_request_files,
+            mcp__github__get_pull_request_diff,
+            mcp__github__create_issue_comment,
+            mcp__github__add_pull_request_review_comment,
+            mcp__github__list_pull_request_files,
+            Bash
           prompt: |
             Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
-            Run: gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }}
+            Use mcp__github__get_pull_request to read the PR details and
+            mcp__github__get_pull_request_files to see what changed.
             Analyze the diff for bugs, security issues, and Vue 3 best practices.
-            Then run: gh pr review ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --comment --body "YOUR REVIEW HERE"
+            Post your review using mcp__github__create_issue_comment with owner="lubanito",
+            repo="meridian-workshop", issue_number=${{ github.event.pull_request.number }},
+            and your review text as the body.
