@@ -158,7 +158,7 @@ export default {
   name: 'Restocking',
   setup() {
     const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, currentCurrency } = useI18n()
+    const { t, currentLocale, currentCurrency } = useI18n()
 
     const inventory = ref([])
     const demandForecasts = ref([])
@@ -238,7 +238,7 @@ export default {
     })
 
     const formatCurrency = (num) =>
-      Number(num).toLocaleString('en-US', {
+      Number(num).toLocaleString(currentLocale.value, {
         style: 'currency',
         currency: currentCurrency.value,
         minimumFractionDigits: 2,
@@ -322,6 +322,8 @@ export default {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
     }
 
+    // FilterBar is mounted globally in App.vue; selectedLocation/selectedCategory
+    // are module-level refs shared with every component that calls useFilters().
     watch([selectedLocation, selectedCategory], loadData, { immediate: true })
 
     return {

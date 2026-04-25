@@ -226,7 +226,7 @@ export default {
     totalCandidates: 'Total Candidates',
     budgetUtilization: 'Budget Utilization',
     budgetCeiling: 'Budget Ceiling',
-    budgetLabel: 'Budget ceiling ($)',
+    budgetLabel: 'Budget ceiling',
     items: 'items',
     overBudget: 'Over budget',
     table: {

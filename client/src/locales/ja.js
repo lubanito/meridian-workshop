@@ -226,7 +226,7 @@ export default {
     totalCandidates: '候補品目数',
     budgetUtilization: '予算使用率',
     budgetCeiling: '予算上限',
-    budgetLabel: '予算上限（$）',
+    budgetLabel: '予算上限',
     items: '件',
     overBudget: '予算超過',
     table: {

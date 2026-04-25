@@ -125,7 +125,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
@@ -180,11 +180,10 @@ export default {
       }
     }
 
-    watch([selectedPeriod, selectedLocation, selectedCategory], loadData)
-    onMounted(loadData)
+    watch([selectedPeriod, selectedLocation, selectedCategory], loadData, { immediate: true })
 
     const formatCurrency = (num) => {
-      return Number(num).toLocaleString('en-US', {
+      return Number(num).toLocaleString(currentLocale.value, {
         style: 'currency',
         currency: currentCurrency.value,
         minimumFractionDigits: 2,
