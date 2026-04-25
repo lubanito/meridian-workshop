@@ -27,30 +27,33 @@ const currentUser = computed(() => {
     jobTitle: isJapanese ? 'オペレーションマネージャー' : 'Operations Manager',
     department: isJapanese ? 'サプライチェーン運営部' : 'Supply Chain Operations',
     location: isJapanese ? 'サンフランシスコ' : 'San Francisco',
+    // Mock task IDs use a 'mock-' prefix so they can never collide with
+    // server-generated task IDs (which use 'task-{uuid}'). The split keeps
+    // App.vue's "is this a mock or API task?" check unambiguous.
     tasks: isJapanese ? [
       {
-        id: 1,
+        id: 'mock-1',
         title: '第4四半期の在庫レベルを確認',
         priority: 'high',
         dueDate: '2026-05-08',
         status: 'pending'
       },
       {
-        id: 2,
+        id: 'mock-2',
         title: '東京倉庫の注文を承認',
         priority: 'medium',
         dueDate: '2026-05-06',
         status: 'pending'
       },
       {
-        id: 3,
+        id: 'mock-3',
         title: '回路基板の再注文点を更新',
         priority: 'medium',
         dueDate: '2026-05-10',
         status: 'pending'
       },
       {
-        id: 4,
+        id: 'mock-4',
         title: '月次支出レポートを確認',
         priority: 'low',
         dueDate: '2026-05-15',
@@ -58,28 +61,28 @@ const currentUser = computed(() => {
       }
     ] : [
       {
-        id: 1,
+        id: 'mock-1',
         title: 'Review Q4 inventory levels',
         priority: 'high',
         dueDate: '2026-05-08',
         status: 'pending'
       },
       {
-        id: 2,
+        id: 'mock-2',
         title: 'Approve Tokyo warehouse orders',
         priority: 'medium',
         dueDate: '2026-05-06',
         status: 'pending'
       },
       {
-        id: 3,
+        id: 'mock-3',
         title: 'Update reorder points for Circuit Boards',
         priority: 'medium',
         dueDate: '2026-05-10',
         status: 'pending'
       },
       {
-        id: 4,
+        id: 'mock-4',
         title: 'Review monthly spending report',
         priority: 'low',
         dueDate: '2026-05-15',
