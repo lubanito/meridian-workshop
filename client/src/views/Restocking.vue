@@ -182,16 +182,14 @@ export default {
     const error = ref(null)
     const budgetCeiling = ref(DEFAULT_BUDGET)
 
-    // The number input's `min="0"` is a hint, not a constraint — users can
-    // still type "-100", and v-model.number leaves the ref as NaN while
-    // the input is mid-edit. Normalise eagerly so downstream computeds
-    // (overBudgetSkus, budgetPercent) never see NaN or negatives.
+    // Normalize on blur (commit time) — eager mid-edit normalization
+    // would snap the input back to 0 the instant a user clears the
+    // field to retype, which is jarring. Downstream computeds use
+    // `!(value > 0)` guards so they treat NaN/negatives as "no budget"
+    // until blur fires.
     const normalizeBudget = () => {
       if (!(budgetCeiling.value > 0)) budgetCeiling.value = 0
     }
-    watch(budgetCeiling, (val) => {
-      if (Number.isNaN(val) || val < 0) budgetCeiling.value = 0
-    })
     const successMessage = ref(false)
     const emptySelectionNotice = ref(false)
     let emptyNoticeTimer = null
@@ -334,7 +332,12 @@ export default {
       return Math.round((totalSelected.value / budgetCeiling.value) * 100)
     })
 
-    const isOverBudget = computed(() => totalSelected.value > budgetCeiling.value)
+    const isOverBudget = computed(() =>
+      // Guard NaN/<=0 directly so we don't depend on a watcher resetting
+      // the input — a mid-edit empty/negative value just shows "no budget"
+      // rather than incorrectly flagging the cart as over-budget.
+      budgetCeiling.value > 0 && totalSelected.value > budgetCeiling.value
+    )
 
     const progressBarWidth = computed(() => Math.min(budgetPercent.value, 100))
 
