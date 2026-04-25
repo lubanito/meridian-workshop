@@ -46,7 +46,11 @@ test.describe('Restocking page', () => {
 
   test('clicking preview draft shows summary', async ({ page }) => {
     await page.getByRole('button', { name: /Preview Draft/i }).click();
-    await expect(page.getByText(/not yet submitted/i)).toBeVisible();
+    // Assert on the alert container directly — the "not yet submitted"
+    // copy could in theory move into the always-visible draftHint span
+    // and the test would still pass without the click doing anything.
+    await expect(page.locator('.success-alert')).toBeVisible();
+    await expect(page.locator('.success-alert')).toContainText(/not yet submitted/i);
   });
 
   test('changing budget ceiling updates budget utilization stat', async ({ page }) => {
