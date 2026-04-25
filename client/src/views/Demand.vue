@@ -111,7 +111,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
@@ -119,7 +119,7 @@ import { useI18n } from '../composables/useI18n'
 export default {
   name: 'Demand',
   setup() {
-    const { t } = useI18n()
+    const { t, currentLocale } = useI18n()
     const loading = ref(true)
     const error = ref(null)
     const allForecasts = ref([])
@@ -140,8 +140,9 @@ export default {
     })
 
     const loadForecasts = async () => {
+      loading.value = true
+      error.value = null
       try {
-        loading.value = true
         const filters = getCurrentFilters()
 
         const [forecastsData, inventoryData] = await Promise.all([
@@ -154,17 +155,14 @@ export default {
 
         allForecasts.value = forecastsData
         inventoryItems.value = inventoryData
-      } catch (err) {
-        error.value = 'Failed to load demand forecasts: ' + err.message
+      } catch {
+        error.value = t('common.errorLoadingData')
       } finally {
         loading.value = false
       }
     }
 
-    // Watch for filter changes and reload data
-    watch([selectedLocation, selectedCategory], () => {
-      loadForecasts()
-    })
+    watch([selectedLocation, selectedCategory], loadForecasts, { immediate: true })
 
     const getForecastsByTrend = (trend) => {
       return forecasts.value.filter(f => f.trend === trend)
@@ -191,7 +189,7 @@ export default {
 
     const translatePeriod = (period) => {
       // Period values like "Next 3 months", "Q1 2025", "30 days", etc.
-      const { currentLocale } = useI18n()
+      // Reads currentLocale from setup-scope (not a nested useI18n() call).
       if (currentLocale.value === 'ja') {
         return period
           .replace(/Next\s+/i, '次の')
@@ -206,8 +204,6 @@ export default {
       }
       return period
     }
-
-    onMounted(loadForecasts)
 
     return {
       t,

@@ -145,7 +145,7 @@
         <strong>{{ t('restocking.successMessage') }}</strong>
         <ul>
           <li v-for="item in confirmedItems" :key="item.sku">
-            {{ item.sku }} — {{ item.name }}: {{ item.qty_to_order.toLocaleString() }} units @ {{ formatCurrency(item.unit_cost) }} = {{ formatCurrency(item.qty_to_order * item.unit_cost) }}
+            {{ item.sku }} — {{ item.name }}: {{ item.qty_to_order.toLocaleString() }} {{ t('purchaseOrder.units') }} @ {{ formatCurrency(item.unit_cost) }} = {{ formatCurrency(item.qty_to_order * item.unit_cost) }}
           </li>
         </ul>
         <div class="success-total">
@@ -259,10 +259,12 @@ export default {
       return results
     })
 
-    // Coerce + floor at 0 in one place rather than inline in the template,
-    // so the rule is grep-able and unit-testable.
+    // Coerce + floor at 0 + truncate to whole units in one place rather
+    // than inline in the template, so the rule is grep-able and
+    // unit-testable. POs are placed in whole units; fractional qty
+    // would also confuse the unit_cost × qty multiplication downstream.
     const updateQty = (sku, raw) => {
-      editedQtys.value[sku] = Math.max(0, Number(raw) || 0)
+      editedQtys.value[sku] = Math.max(0, Math.floor(Number(raw) || 0))
     }
 
     // Keep editedQtys in sync with recommendations (reset on data reload)

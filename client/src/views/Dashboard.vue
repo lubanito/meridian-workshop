@@ -150,7 +150,7 @@
                 <div class="h-bar-label">{{ translateCategory(cat.name) }}</div>
                 <div class="h-bar-container">
                   <div class="h-bar" :style="{ width: (cat.value / maxCategoryValue * 100) + '%', background: cat.color }">
-                    <span class="h-bar-value">{{ selectedCurrency === 'JPY' ? formatCurrency(cat.value) : `$${(cat.value / 1000).toFixed(1)}K` }}</span>
+                    <span class="h-bar-value">{{ formatCategoryValue(cat.value) }}</span>
                   </div>
                 </div>
               </div>
@@ -593,6 +593,14 @@ export default {
     const clampedPercent = (value, goal) =>
       Math.min(Math.max(calculatePercentage(value, goal), 0), 100)
 
+    // Compact $X.XK USD label for the category bars; falls back to the
+    // full locale-aware formatCurrency for non-USD locales (e.g. JPY,
+    // where the K suffix and decimal don't apply cleanly).
+    const formatCategoryValue = (value) =>
+      currentCurrency.value === 'USD'
+        ? `$${(value / 1000).toFixed(1)}K`
+        : formatCurrency(value)
+
     // Bar width for the revenue-vs-goal progress bar, capped at 100%.
     const revenueProgressPercent = computed(() => {
       if (!summary.value || !revenueGoal.value) return 0
@@ -706,6 +714,7 @@ export default {
       backlogItems,
       calculatePercentage,
       clampedPercent,
+      formatCategoryValue,
       getCircleSegment,
       getStockBadge,
       translateCategory,

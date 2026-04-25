@@ -60,8 +60,8 @@
                 <td>{{ translateCategory(item.category) }}</td>
                 <td><strong>{{ item.quantity_on_hand }}</strong></td>
                 <td>{{ item.reorder_point }}</td>
-                <td>{{ currencySymbol }}{{ item.unit_cost.toFixed(2) }}</td>
-                <td><strong>{{ currencySymbol }}{{ (item.quantity_on_hand * item.unit_cost).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) }}</strong></td>
+                <td>{{ formatCurrency(item.unit_cost) }}</td>
+                <td><strong>{{ formatCurrency(item.quantity_on_hand * item.unit_cost) }}</strong></td>
                 <td>{{ translateWarehouse(item.location) }}</td>
                 <td>
                   <span :class="['badge', getStockStatusClass(item)]">
@@ -96,11 +96,7 @@ export default {
     InventoryDetailModal
   },
   setup() {
-    const { t, currentCurrency, translateCategory, translateProductName, translateWarehouse } = useI18n()
-
-    const currencySymbol = computed(() => {
-      return currentCurrency.value === 'JPY' ? '¥' : '$'
-    })
+    const { t, formatCurrency, translateCategory, translateProductName, translateWarehouse } = useI18n()
 
     const loading = ref(true)
     const error = ref(null)
@@ -150,16 +146,17 @@ export default {
     })
 
     const loadInventory = async () => {
+      loading.value = true
+      error.value = null
       try {
-        loading.value = true
         const filters = getCurrentFilters()
         // Inventory doesn't support month/status filters, only warehouse and category
         items.value = await api.getInventory({
           warehouse: filters.warehouse,
           category: filters.category
         })
-      } catch (err) {
-        error.value = 'Failed to load inventory: ' + err.message
+      } catch {
+        error.value = t('common.errorLoadingData')
       } finally {
         loading.value = false
       }
@@ -200,7 +197,7 @@ export default {
       showItemModal,
       selectedItem,
       showItemDetail,
-      currencySymbol,
+      formatCurrency,
       translateProductName,
       translateWarehouse
     }
