@@ -133,7 +133,10 @@ import { useI18n } from '../composables/useI18n'
 export default {
   name: 'Reports',
   setup() {
-    const { selectedPeriod, selectedLocation, selectedCategory, selectedStatus, getCurrentFilters } = useFilters()
+    // selectedStatus is intentionally absent: reportParams() does not send
+    // status to the quarterly/monthly endpoints, so watching it would only
+    // fire a redundant fetch and cause a loading flicker.
+    const { selectedPeriod, selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
     const { t, currentLocale, formatCurrency } = useI18n()
 
     const loading = ref(true)
@@ -180,7 +183,7 @@ export default {
       }
     }
 
-    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], loadData, { immediate: true })
+    watch([selectedPeriod, selectedLocation, selectedCategory], loadData, { immediate: true })
 
     const formatMonth = (monthStr) => {
       if (!monthStr?.includes('-')) return monthStr ?? ''
@@ -203,8 +206,9 @@ export default {
 
     const getChangeValue = (current, previous) => {
       const change = current - previous
-      if (change === 0) return formatCurrency(0)
-      return (change > 0 ? '+' : '') + formatCurrency(change)
+      // formatCurrency already renders the locale-appropriate minus sign for
+      // negatives; we only need to add an explicit '+' for positive deltas.
+      return change > 0 ? '+' + formatCurrency(change) : formatCurrency(change)
     }
 
     const getChangeClass = (current, previous) => {

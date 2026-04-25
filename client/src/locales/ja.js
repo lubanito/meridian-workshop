@@ -250,6 +250,7 @@ export default {
       budget: '予算',
       overBudget: '予算超過',
       withinBudget: '予算内',
+      withinBudgetHint: '予算内：{amount}（フラグ付きの行を除く）',
       total: '合計：'
     },
     generatePO: 'ドラフトをプレビュー',

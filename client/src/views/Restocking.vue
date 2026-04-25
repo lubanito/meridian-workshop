@@ -121,6 +121,9 @@
           </span>
           <span v-if="isOverBudget" class="badge danger">{{ t('restocking.summary.overBudget') }}</span>
         </div>
+        <div v-if="isOverBudget" class="within-budget-hint">
+          {{ t('restocking.summary.withinBudgetHint', { amount: formatCurrency(totalWithinBudget) }) }}
+        </div>
         <div class="progress-bar-track">
           <div
             class="progress-bar-fill"
@@ -158,6 +161,10 @@ import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
 import { api } from '../api'
 
+// Default budget ceiling shown the first time a user opens the page; the
+// input is editable so this is just an opinionated starting point.
+const DEFAULT_BUDGET = 50_000
+
 export default {
   name: 'Restocking',
   setup() {
@@ -168,7 +175,7 @@ export default {
     const demandForecasts = ref([])
     const loading = ref(true)
     const error = ref(null)
-    const budgetCeiling = ref(50000)
+    const budgetCeiling = ref(DEFAULT_BUDGET)
     const successMessage = ref(false)
     const confirmedItems = ref([])
     const confirmedTotal = ref(0)
@@ -216,6 +223,10 @@ export default {
         // Medium are reachable. Items not flagged on either signal are skipped.
         const priority = isBelowReorder && isIncreasing ? 'High' : 'Medium'
 
+        // Heuristic: target stock = 2× reorder point. Doubling provides a
+        // simple safety margin above the trip-point so the next reorder
+        // isn't immediately due. If forecasted demand is higher, override
+        // to cover that instead — never order less than what's predicted.
         let recommended_qty = Math.max(item.reorder_point * 2 - item.quantity_on_hand, 0)
         if (demand && demand.forecasted_demand > item.quantity_on_hand) {
           recommended_qty = Math.max(recommended_qty, demand.forecasted_demand - item.quantity_on_hand)
@@ -274,10 +285,24 @@ export default {
       return inventory.value.filter(i => skusWithIncreasing.has(i.sku)).length
     })
 
-    // Walk the same priority-sorted list overBudgetSkus uses, so the budget
-    // bar and per-row over-budget badges can never disagree at the boundary.
+    // Total of every line the buyer has requested (qty > 0), including
+    // over-budget rows. The "Over budget" per-row badge is informational —
+    // it does not auto-exclude the row from the draft, so this number
+    // intentionally matches what previewDraftPOs would submit.
+    // Walks sortedRecommendations so it iterates the same list overBudgetSkus
+    // walks, keeping the budget bar and per-row badges consistent.
     const totalSelected = computed(() =>
       sortedRecommendations.value.reduce((sum, item) => {
+        const qty = editedQtys.value[item.sku] ?? 0
+        return sum + qty * item.unit_cost
+      }, 0)
+    )
+
+    // Sum excluding rows the over-budget walk has flagged — i.e. what would
+    // fit within the ceiling. Used for a "X within budget" hint in the UI.
+    const totalWithinBudget = computed(() =>
+      sortedRecommendations.value.reduce((sum, item) => {
+        if (overBudgetSkus.value.has(item.sku)) return sum
         const qty = editedQtys.value[item.sku] ?? 0
         return sum + qty * item.unit_cost
       }, 0)
@@ -320,7 +345,9 @@ export default {
     // inventory + demand, not the backlog — so we keep this in-memory and
     // surface a "not yet submitted" banner.
     const previewDraftPOs = async () => {
-      const selected = recommendations.value.filter(i => (editedQtys.value[i.sku] ?? 0) > 0)
+      // Walk sortedRecommendations so the draft summary matches the table
+      // order the buyer is looking at, not the raw inventory order.
+      const selected = sortedRecommendations.value.filter(i => (editedQtys.value[i.sku] ?? 0) > 0)
       if (selected.length === 0) return
       confirmedItems.value = selected.map(i => ({
         ...i,
@@ -348,6 +375,7 @@ export default {
       belowReorderCount,
       increasingDemandCount,
       totalSelected,
+      totalWithinBudget,
       budgetPercent,
       isOverBudget,
       progressBarWidth,
@@ -465,6 +493,12 @@ export default {
 .budget-summary-text {
   font-size: 0.938rem;
   color: var(--color-text-body);
+}
+
+.within-budget-hint {
+  font-size: 0.813rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
 }
 
 .progress-bar-track {

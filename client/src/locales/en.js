@@ -250,6 +250,7 @@ export default {
       budget: 'budget',
       overBudget: 'Over Budget',
       withinBudget: 'Within Budget',
+      withinBudgetHint: 'Within budget: {amount} (excludes flagged rows)',
       total: 'Total:'
     },
     generatePO: 'Preview Draft',

@@ -282,7 +282,7 @@ def get_quarterly_reports(
 
         quarters[quarter]['total_orders'] += 1
         quarters[quarter]['total_revenue'] += order.get('total_value', 0)
-        if order.get('status') == 'Delivered':
+        if order.get('status', '').lower() == 'delivered':
             quarters[quarter]['delivered_orders'] += 1
 
     result = []
@@ -315,7 +315,7 @@ def get_monthly_trends(
             months[m] = {'month': m, 'order_count': 0, 'revenue': 0, 'delivered_count': 0}
         months[m]['order_count'] += 1
         months[m]['revenue'] += order.get('total_value', 0)
-        if order.get('status') == 'Delivered':
+        if order.get('status', '').lower() == 'delivered':
             months[m]['delivered_count'] += 1
 
     result = list(months.values())
