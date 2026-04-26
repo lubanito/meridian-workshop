@@ -1,7 +1,7 @@
 import os
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Literal, Optional
@@ -9,16 +9,6 @@ from pydantic import BaseModel, Field, field_validator
 from mock_data import inventory_items, orders, demand_forecasts, backlog_items, spending_summary, monthly_spending, category_spending, recent_transactions, purchase_orders, tasks
 
 app = FastAPI(title="Factory Inventory Management System")
-
-# Quarter mapping for date filtering. Hardcoded to 2025 for the demo
-# dataset — Q*-2024 / Q*-2026 etc. fall through to the unrecognized-quarter
-# branch in filter_by_month and return [] (empty result, no error).
-QUARTER_MAP = {
-    'Q1-2025': ['2025-01', '2025-02', '2025-03'],
-    'Q2-2025': ['2025-04', '2025-05', '2025-06'],
-    'Q3-2025': ['2025-07', '2025-08', '2025-09'],
-    'Q4-2025': ['2025-10', '2025-11', '2025-12']
-}
 
 def _month_prefix(value: str) -> str:
     """Return the YYYY-MM portion of an order_date, ignoring any time
@@ -49,13 +39,13 @@ def filter_by_month(items: list, month: Optional[str]) -> list:
         return items
 
     if month.startswith('Q'):
-        quarter_months = QUARTER_MAP.get(month)
-        if not quarter_months:
-            # Quarter shape is valid but year isn't covered by QUARTER_MAP
-            # (e.g. Q1-2026 for the 2025-only demo dataset). Returning []
-            # is the right behavior — there is no data for that range.
-            return []
-        wanted = set(quarter_months)
+        # Compute the three month prefixes from the validated 'Q[1-4]-YYYY'
+        # string instead of looking up a year-locked dict — Q1-2026, Q2-2030
+        # etc. all work, so the filter never silently returns [] just because
+        # the demo dataset hasn't been extended.
+        q = int(month[1])
+        year = month[3:]
+        wanted = {f"{year}-{(q - 1) * 3 + m:02d}" for m in (1, 2, 3)}
         return [item for item in items if _month_prefix(item.get('order_date', '')) in wanted]
     else:
         # Direct month match using a YYYY-MM slice avoids '2025-1' colliding
@@ -203,12 +193,15 @@ def _validate_iso_date(value: str, *, allow_past: bool = True) -> str:
         )
     # Some fields (PO expected_delivery_date) must be today or later — the
     # client pins min=todayIso but a direct API call would otherwise let
-    # past dates land in state.
+    # past dates land in state. Allow one day of slack so a buyer in HKT/JST
+    # whose local clock has rolled to "tomorrow" while server UTC is still
+    # "today" doesn't get rejected for picking what they see as today.
     if not allow_past:
-        today = datetime.now(timezone.utc).date()
-        if parsed.date() < today:
+        today_utc = datetime.now(timezone.utc).date()
+        earliest = today_utc - timedelta(days=1)
+        if parsed.date() < earliest:
             raise ValueError(
-                f"date {value!r} cannot be in the past (today is {today.isoformat()})"
+                f"date {value!r} cannot be in the past (today is {today_utc.isoformat()})"
             )
     return value
 
