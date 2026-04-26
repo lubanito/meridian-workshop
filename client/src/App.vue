@@ -212,8 +212,10 @@ export default {
   --color-border: #e2e8f0;
   --color-bg-subtle: #f1f5f9;
   --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
   --color-accent-bg: #eff6ff;
   --color-danger: #dc2626;
+  --color-danger-bg: #fff7f7;
 }
 
 [data-theme="dark"] {
@@ -229,10 +231,12 @@ export default {
   --color-border: #334155;
   --color-bg-subtle: #1e293b;
   --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
   --color-accent-bg: #1e3a5f;
   /* Same shade as light mode — #dc2626 on the dark surface
      (#1e293b) is ~4.7:1 contrast, clears WCAG AA. */
   --color-danger: #dc2626;
+  --color-danger-bg: rgba(220, 38, 38, 0.08);
 }
 
 * {

@@ -40,7 +40,7 @@
                 </div>
                 <div class="form-field">
                   <label for="po-unit-cost" class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
-                  <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" min="0" step="0.01" required class="form-input" />
+                  <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" min="0" :step="unitCostStep" required class="form-input" />
                 </div>
                 <div class="form-field">
                   <label for="po-delivery-date" class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
@@ -176,7 +176,12 @@ const onKeydown = (e) => {
   }
 }
 
-const { t, formatCurrency, formatDate } = useI18n()
+const { t, formatCurrency, formatDate, currentCurrency } = useI18n()
+
+// JPY has no subunit; USD ticks at 0.01. Hardcoding step="0.01" let a JPY
+// session enter fractional yen, which the formatter would round-trip as
+// the literal value but `formatCurrency` strips for display anyway.
+const unitCostStep = computed(() => (currentCurrency.value === 'JPY' ? 1 : 0.01))
 
 // YYYY-MM-DD for the date-input `min` attribute. Recomputed each time
 // the modal opens so a session that's been idle past midnight doesn't
@@ -200,12 +205,16 @@ const form = ref({
 const formError = ref('')
 const submitting = ref(false)
 
-const isFormValid = computed(() =>
+// Boolean(...) wrap so the computed type is a clean boolean instead of
+// "string | number | 0 | ''" — Vue evaluates either as falsy for the
+// disabled binding, but consumers reading isFormValid.value get a real
+// boolean.
+const isFormValid = computed(() => Boolean(
   form.value.supplier_name.trim() &&
   form.value.quantity > 0 &&
   form.value.unit_cost > 0 &&
   form.value.expected_delivery_date
-)
+))
 
 const poData = ref(null)
 const poLoading = ref(false)

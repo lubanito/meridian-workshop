@@ -557,11 +557,7 @@ export default {
 }
 
 .row-over-budget {
-  background: #fff7f7;
-}
-
-[data-theme="dark"] .row-over-budget {
-  background: rgba(220, 38, 38, 0.08);
+  background: var(--color-danger-bg);
 }
 
 .budget-summary-card {
@@ -642,7 +638,7 @@ export default {
 }
 
 .btn-primary:hover {
-  background: #1d4ed8;
+  background: var(--color-accent-hover);
 }
 
 /* Draft-state alert (amber, not green) — the action is a preview, not a real submission */

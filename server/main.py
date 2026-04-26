@@ -27,27 +27,39 @@ def _month_prefix(value: str) -> str:
     return (value or '')[:7]
 
 # Accepted shapes: 'YYYY-MM' (zero-padded month) or 'Q[1-4]-YYYY' (quarter).
-# Anything else returns [] from filter_by_month rather than 422-ing because
-# the value comes from a query string we can't gate at the schema level for
-# legacy callers, but at least we don't pretend partial matches succeeded.
 _MONTH_FILTER_RE = re.compile(r'^\d{4}-(0[1-9]|1[0-2])$')
+_QUARTER_FILTER_RE = re.compile(r'^Q[1-4]-\d{4}$')
+
+def _validate_month_filter(month: Optional[str]) -> None:
+    """Raise 422 if `month` is set but doesn't match an accepted shape.
+    Silently returning [] for typos hurts debuggability."""
+    if not month or month == 'all':
+        return
+    if _MONTH_FILTER_RE.match(month) or _QUARTER_FILTER_RE.match(month):
+        return
+    raise HTTPException(
+        status_code=422,
+        detail=f"Invalid month filter {month!r}; expected YYYY-MM or Q[1-4]-YYYY",
+    )
 
 def filter_by_month(items: list, month: Optional[str]) -> list:
-    """Filter items by month/quarter based on order_date field"""
+    """Filter items by month/quarter based on order_date field.
+    Assumes `month` has already been validated by _validate_month_filter."""
     if not month or month == 'all':
         return items
 
     if month.startswith('Q'):
         quarter_months = QUARTER_MAP.get(month)
         if not quarter_months:
-            return []  # unrecognized quarter — return empty rather than leaking all records
+            # Quarter shape is valid but year isn't covered by QUARTER_MAP
+            # (e.g. Q1-2026 for the 2025-only demo dataset). Returning []
+            # is the right behavior — there is no data for that range.
+            return []
         wanted = set(quarter_months)
         return [item for item in items if _month_prefix(item.get('order_date', '')) in wanted]
     else:
         # Direct month match using a YYYY-MM slice avoids '2025-1' colliding
         # with '2025-10' and tolerates ISO 8601 datetime suffixes.
-        if not _MONTH_FILTER_RE.match(month):
-            return []  # malformed month filter — return empty rather than partial matches
         return [item for item in items if _month_prefix(item.get('order_date', '')) == month]
 
 def apply_filters(items: list, warehouse: Optional[str] = None, category: Optional[str] = None,
@@ -178,7 +190,9 @@ class CreatePurchaseOrderRequest(BaseModel):
 class Task(BaseModel):
     id: str
     title: str
-    priority: str
+    # Tighten to the same Literal as the create request so a bad value in
+    # tasks.json fails loudly at boot instead of round-tripping to clients.
+    priority: Literal['low', 'medium', 'high']
     due_date: Optional[str] = None
     completed: bool = False
     created_date: str
@@ -224,6 +238,7 @@ def get_orders(
     month: Optional[str] = None
 ):
     """Get all orders with optional filtering"""
+    _validate_month_filter(month)
     filtered_orders = apply_filters(orders, warehouse, category, status)
     filtered_orders = filter_by_month(filtered_orders, month)
     return filtered_orders
@@ -262,6 +277,7 @@ def get_dashboard_summary(
     month: Optional[str] = None
 ):
     """Get summary statistics for dashboard with optional filtering"""
+    _validate_month_filter(month)
     # Filter inventory
     filtered_inventory = apply_filters(inventory_items, warehouse, category)
 
@@ -311,6 +327,7 @@ def get_quarterly_reports(
     month: Optional[str] = None
 ):
     """Get quarterly performance reports with optional filtering"""
+    _validate_month_filter(month)
     filtered_orders = apply_filters(orders, warehouse, category)
     # Only apply quarter-level filters (Q1-Q4); skip individual month filters so a
     # single-month selection doesn't make one quarter appear to have missing months.
@@ -367,6 +384,7 @@ def get_monthly_trends(
     month: Optional[str] = None
 ):
     """Get month-over-month trends with optional filtering"""
+    _validate_month_filter(month)
     filtered_orders = apply_filters(orders, warehouse, category)
     filtered_orders = filter_by_month(filtered_orders, month)
 
