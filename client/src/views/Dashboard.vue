@@ -89,18 +89,18 @@
                 <svg viewBox="0 0 200 200" class="donut-svg-compact">
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#e2e8f0" stroke-width="25"/>
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#10b981" stroke-width="25"
-                    :stroke-dasharray="`${getCircleSegment(statusData.delivered)} 408`"
+                    :stroke-dasharray="`${getCircleSegment(statusData.delivered)} ${circleCircumference}`"
                     stroke-dashoffset="0" transform="rotate(-90 100 100)"/>
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#3b82f6" stroke-width="25"
-                    :stroke-dasharray="`${getCircleSegment(statusData.shipped)} 408`"
+                    :stroke-dasharray="`${getCircleSegment(statusData.shipped)} ${circleCircumference}`"
                     :stroke-dashoffset="`-${getCircleSegment(statusData.delivered)}`"
                     transform="rotate(-90 100 100)"/>
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#f59e0b" stroke-width="25"
-                    :stroke-dasharray="`${getCircleSegment(statusData.processing)} 408`"
+                    :stroke-dasharray="`${getCircleSegment(statusData.processing)} ${circleCircumference}`"
                     :stroke-dashoffset="`-${getCircleSegment(statusData.delivered) + getCircleSegment(statusData.shipped)}`"
                     transform="rotate(-90 100 100)"/>
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#ef4444" stroke-width="25"
-                    :stroke-dasharray="`${getCircleSegment(statusData.backordered)} 408`"
+                    :stroke-dasharray="`${getCircleSegment(statusData.backordered)} ${circleCircumference}`"
                     :stroke-dashoffset="`-${getCircleSegment(statusData.delivered) + getCircleSegment(statusData.shipped) + getCircleSegment(statusData.processing)}`"
                     transform="rotate(-90 100 100)"/>
                   <text x="100" y="90" text-anchor="middle" class="donut-center-label">{{ t('dashboard.orderHealth.total') }}</text>
@@ -315,7 +315,7 @@ export default {
     PurchaseOrderModal,
   },
   setup() {
-    const { t, currentLocale, currentCurrency, formatCurrency, translateCategory, translateProductName, translateWarehouse } = useI18n()
+    const { t, currentLocale, currentCurrency, formatCurrency, formatDate, translateCategory, translateProductName, translateWarehouse } = useI18n()
     const loading = ref(true)
     const error = ref(null)
     const summary = ref({})
@@ -623,9 +623,13 @@ export default {
              statusData.value.processing + statusData.value.backordered
     })
 
+    // Donut radius is 65 in the SVG; circumference = 2π·65 ≈ 408. The
+    // template uses ${circleCircumference} in every stroke-dasharray
+    // template literal so the helper and the markup stay in sync if the
+    // radius ever changes.
+    const circleCircumference = 408
     const getCircleSegment = (value) => {
-      // circumference = 2 * π * r = 2 * π * 65 ≈ 408
-      return totalOrders.value > 0 ? (value / totalOrders.value) * 408 : 0
+      return totalOrders.value > 0 ? (value / totalOrders.value) * circleCircumference : 0
     }
 
     const getStockBadge = (level) => {
@@ -659,14 +663,6 @@ export default {
     const priorityClass = (priority) => {
       const allowed = { high: 'high', medium: 'medium', low: 'low' }
       return allowed[(priority || '').toLowerCase()] || 'low'
-    }
-
-    const formatDate = (dateString) => {
-      if (!dateString) return '-'
-      const date = new Date(dateString)
-      if (isNaN(date.getTime())) return '-'
-      const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
-      return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
     }
 
     const showProductDetail = (product) => {
@@ -730,6 +726,7 @@ export default {
       clampedPercent,
       formatCategoryValue,
       getCircleSegment,
+      circleCircumference,
       getStockBadge,
       translateCategory,
       translateStockLevel,

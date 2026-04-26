@@ -632,4 +632,14 @@ tbody tr:hover {
   margin: 1rem 0;
   font-size: 0.938rem;
 }
+
+/* Dark-mode override for the global .error banner — the pastel pink
+   light-mode palette has poor contrast against --color-surface #1e293b
+   and looks visually broken next to the rest of the dark UI. Mirrors the
+   PurchaseOrderModal's [data-theme="dark"] .error-state pattern. */
+[data-theme="dark"] .error {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.4);
+  color: #fca5a5;
+}
 </style>

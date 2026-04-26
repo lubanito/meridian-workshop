@@ -463,4 +463,9 @@ export default {
   border-radius: 8px;
   margin: 1rem 0;
 }
+
+[data-theme="dark"] .error {
+  background: rgba(220, 38, 38, 0.12);
+  color: #fca5a5;
+}
 </style>

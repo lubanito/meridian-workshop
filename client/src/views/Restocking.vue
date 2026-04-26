@@ -587,7 +587,11 @@ export default {
   font-size: 0.688rem;
 }
 
-.row-over-budget {
+.row-over-budget,
+/* :hover sibling: the global tbody tr:hover would otherwise replace
+   --color-danger-bg with --color-bg-subtle when the user mouses over
+   a flagged row — exactly when they're most likely looking at it. */
+.row-over-budget:hover {
   background: var(--color-danger-bg);
 }
 
