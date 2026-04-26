@@ -448,19 +448,19 @@ const submit = async () => {
 textarea.form-input { resize: vertical; }
 
 .form-error {
-  color: #dc2626;
+  color: var(--color-danger);
   font-size: 0.875rem;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
   border-radius: 6px;
   padding: 0.625rem 0.875rem;
 }
 
 .loading-state { color: var(--color-text-muted); text-align: center; padding: 2rem; }
 .error-state {
-  color: #dc2626;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
   border-radius: 6px;
   padding: 0.875rem;
 }
@@ -509,7 +509,7 @@ textarea.form-input { resize: vertical; }
 
 .btn-primary {
   padding: 0.5rem 1.25rem;
-  background: #2563eb;
+  background: var(--color-accent);
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -520,7 +520,7 @@ textarea.form-input { resize: vertical; }
   font-family: inherit;
 }
 
-.btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s ease; }

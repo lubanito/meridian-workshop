@@ -7,9 +7,15 @@ const translations = {
   ja
 }
 
-// Load saved locale from localStorage, default to 'en'
-// Wrapped in try/catch: localStorage may throw in sandboxed iframes or private mode
-const savedLocale = (() => { try { return localStorage.getItem('app-locale') || 'en' } catch { return 'en' } })()
+// Load saved locale from localStorage, default to 'en'.
+// The typeof window guard mirrors the document guard below so SSR / test
+// environments without a window object don't ReferenceError before the
+// try/catch can fire. The try/catch still covers sandboxed iframes and
+// private-mode quota errors where window exists but localStorage throws.
+const savedLocale = (() => {
+  if (typeof window === 'undefined') return 'en'
+  try { return window.localStorage.getItem('app-locale') || 'en' } catch { return 'en' }
+})()
 const currentLocale = ref(savedLocale)
 // Mirror the saved locale onto <html lang="..."> at module load so the
 // initial paint reports the right locale to screen readers / search.

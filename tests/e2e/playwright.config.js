@@ -28,6 +28,12 @@ export default defineConfig({
     // runner's system locale. App i18n already defaults to en; this also
     // stabilizes browser locale for date inputs and Intl-formatted output.
     locale: 'en-US',
+    // Pin color scheme so the dark-mode tests start from a known light
+    // baseline. The pre-paint inline script in index.html honors
+    // prefers-color-scheme as a fallback when localStorage is empty, so a
+    // runner / Playwright-default flip to 'dark' would silently dark-paint
+    // first load and break the "one click → dark" assertion.
+    colorScheme: 'light',
   },
   projects: [
     { name: 'chromium', use: { browserName: 'chromium' } },

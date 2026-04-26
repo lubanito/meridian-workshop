@@ -193,9 +193,11 @@ def _validate_iso_date(value: str, *, allow_past: bool = True) -> str:
         )
     # Some fields (PO expected_delivery_date) must be today or later — the
     # client pins min=todayIso but a direct API call would otherwise let
-    # past dates land in state. Allow one day of slack so a buyer in HKT/JST
-    # whose local clock has rolled to "tomorrow" while server UTC is still
-    # "today" doesn't get rejected for picking what they see as today.
+    # past dates land in state. Allow one day of slack so a buyer in any
+    # timezone (UTC-12 .. UTC+14) can submit their local "today" without
+    # the server rejecting it as past: ahead-of-UTC zones may have already
+    # rolled over to tomorrow_utc while still picking today_local; behind-
+    # UTC zones are still on yesterday_utc when picking today_local.
     if not allow_past:
         today_utc = datetime.now(timezone.utc).date()
         earliest = today_utc - timedelta(days=1)
