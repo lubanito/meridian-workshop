@@ -48,6 +48,7 @@
       {{ t('restocking.noRecommendations') }}
     </div>
     <template v-else>
+      <div class="card-note">{{ t('restocking.filterScopeNote') }}</div>
       <div class="card">
         <div class="card-header">
           <span class="card-title">{{ t('restocking.table.title') }}</span>
@@ -104,7 +105,7 @@
                 </td>
                 <td>{{ formatCurrency(item.unit_cost) }}</td>
                 <td>
-                  <span class="est-cost">{{ formatCurrency(editedQtys[item.rowKey] * item.unit_cost) }}</span>
+                  <span class="est-cost">{{ formatCurrency((editedQtys[item.rowKey] ?? 0) * item.unit_cost) }}</span>
                   <span v-if="overBudgetSkus.has(item.rowKey)" class="badge danger over-budget-badge">{{ t('restocking.overBudget') }}</span>
                 </td>
               </tr>
@@ -612,6 +613,17 @@ export default {
   font-size: 0.813rem;
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.card-note {
+  font-size: 0.813rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-subtle);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-accent);
 }
 
 .empty-selection-notice {

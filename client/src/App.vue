@@ -94,8 +94,15 @@ export default {
     // restore deletes — strictly worse for the buyer's session state.
     const mockTasks = ref([...(currentUser.value?.tasks ?? [])])
 
-    // Dark mode
-    const isDark = ref(false)
+    // Dark mode — read the effective theme on the document element
+    // (set by index.html's pre-paint script before Vue mounts) so the
+    // toggle icon and aria-pressed match reality on first render. The
+    // ref isn't reactive to manual data-theme changes, but those only
+    // happen via toggleTheme/applyTheme below.
+    const isDark = ref(
+      typeof document !== 'undefined' &&
+      document.documentElement.getAttribute('data-theme') === 'dark'
+    )
     const themeToggleLabel = computed(() =>
       isDark.value ? t('theme.switchToLight') : t('theme.switchToDark')
     )
@@ -177,10 +184,16 @@ export default {
 
     onMounted(() => {
       loadTasks()
-      let saved = null
-      try { saved = localStorage.getItem('theme') } catch {}
-      if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        applyTheme(true)
+      // Theme attribute may already be set by index.html's pre-paint
+      // script; only apply if we still need to (covers the no-storage,
+      // first-visit-with-prefers-dark case the IIFE already handled,
+      // but kept here as a defensive double-check).
+      if (document.documentElement.getAttribute('data-theme') !== 'dark') {
+        let saved = null
+        try { saved = localStorage.getItem('theme') } catch {}
+        if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          applyTheme(true)
+        }
       }
     })
 

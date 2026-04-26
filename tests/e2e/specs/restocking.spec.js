@@ -63,6 +63,19 @@ test.describe('Restocking page', () => {
     await input.fill('9999999');
     await expect(page.locator('.stat-card.success').filter({ hasText: 'Budget Utilization' })).toBeVisible();
   });
+
+  test('lowering budget ceiling surfaces a per-row Over Budget badge', async ({ page }) => {
+    // Start with a generous budget so no row is flagged
+    await page.locator('#budget-input').fill('9999999');
+    await expect(page.locator('tbody tr.row-over-budget')).toHaveCount(0);
+    // Drop the budget below the smallest pick — at least one row should
+    // pick up the over-budget styling driven by qty * unit_cost
+    await page.locator('#budget-input').fill('1');
+    await expect(page.locator('tbody tr.row-over-budget').first()).toBeVisible();
+    await expect(
+      page.locator('tbody tr.row-over-budget .badge.danger').filter({ hasText: /Over Budget/i }).first()
+    ).toBeVisible();
+  });
 });
 
 test.describe('Dark mode (D3)', () => {

@@ -148,7 +148,7 @@ export default {
     // status to the quarterly/monthly endpoints, so watching it would only
     // fire a redundant fetch and cause a loading flicker.
     const { selectedPeriod, selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, formatCurrency, localeTag } = useI18n()
+    const { t, formatCurrency, localeTag, currentCurrency } = useI18n()
 
     const loading = ref(true)
     const error = ref(null)
@@ -227,10 +227,10 @@ export default {
       const change = current - previous
       // formatCurrency already renders the locale-appropriate minus sign for
       // negatives; we only need to add an explicit '+' for positive deltas.
-      // Only show the '+' for changes that won't round to zero in the
-      // current currency display — otherwise a 0.001 delta surfaces as
-      // a misleading "+$0.00" / "+¥0".
-      return change >= 0.01 ? '+' + formatCurrency(change) : formatCurrency(change)
+      // Threshold is currency-aware so a delta below the smallest
+      // displayable unit doesn't render as a misleading "+$0.00" or "+¥0".
+      const minUnit = currentCurrency.value === 'JPY' ? 1 : 0.01
+      return change >= minUnit ? '+' + formatCurrency(change) : formatCurrency(change)
     }
 
     const getChangeClass = (current, previous) => {

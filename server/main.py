@@ -82,8 +82,17 @@ def apply_filters(items: list, warehouse: Optional[str] = None, category: Option
 # wildcard (e.g. "https://meridian.example.com,https://staging.example.com").
 # Wildcard is dev-only; allow_credentials must be False with "*" — browsers
 # reject the credentialed-wildcard combination per the CORS spec.
+_APP_ENV = os.getenv("APP_ENV", "development").lower()
 _ALLOWED_ORIGINS_RAW = os.getenv("ALLOWED_ORIGINS", "*")
 ALLOWED_ORIGINS = [o.strip() for o in _ALLOWED_ORIGINS_RAW.split(",") if o.strip()]
+# Refuse to start in non-development with a wildcard CORS allowlist — a
+# missing ALLOWED_ORIGINS env var on a production deploy would otherwise
+# silently accept any origin.
+if _APP_ENV != "development" and ALLOWED_ORIGINS == ["*"]:
+    raise RuntimeError(
+        f"ALLOWED_ORIGINS='*' is not allowed when APP_ENV={_APP_ENV!r}. "
+        "Set ALLOWED_ORIGINS to a comma-separated list of explicit origins."
+    )
 # Fail loud on a misconfigured env var (e.g. ALLOWED_ORIGINS="" or ",,,")
 # rather than starting up with an empty allowlist that silently rejects every
 # origin while still flipping allow_credentials on.
