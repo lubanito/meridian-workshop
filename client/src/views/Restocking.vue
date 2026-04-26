@@ -102,6 +102,7 @@
                     class="qty-input"
                     :aria-label="`${t('restocking.table.qtyToOrder')} — ${item.sku}`"
                     @input="updateQty(item.rowKey, $event.target.value)"
+                    @blur="normalizeQty(item.rowKey, $event.target.value)"
                   />
                 </td>
                 <td>{{ formatCurrency(item.unit_cost) }}</td>
@@ -282,7 +283,19 @@ export default {
     // Keyed by rowKey (warehouse|sku) — see the recommendations builder
     // for why a bare SKU isn't unique.
     const updateQty = (rowKey, raw) => {
+      // While the user is mid-typing leave the displayed value alone if
+      // they cleared the field (raw === ''), otherwise the input snaps to
+      // 0 between keystrokes and the cursor jumps. Normalise to 0 on @blur.
+      if (raw === '') return
       editedQtys.value[rowKey] = Math.max(0, Math.floor(Number(raw) || 0))
+    }
+
+    // Commit-time normaliser: if the user leaves the field empty or
+    // typed something that coerced to NaN/negative, snap back to 0 so
+    // downstream computeds don't see undefined.
+    const normalizeQty = (rowKey, raw) => {
+      const n = Number(raw)
+      if (raw === '' || Number.isNaN(n) || n < 0) editedQtys.value[rowKey] = 0
     }
 
     // Keep editedQtys in sync with recommendations. If the user has already
@@ -460,6 +473,7 @@ export default {
       normalizeBudget,
       editedQtys,
       updateQty,
+      normalizeQty,
       sortedRecommendations,
       belowReorderCount,
       increasingDemandCount,

@@ -228,12 +228,14 @@ export default {
 
     const getChangeValue = (current, previous) => {
       const change = current - previous
-      // formatCurrency already renders the locale-appropriate minus sign for
-      // negatives; we only need to add an explicit '+' for positive deltas.
-      // Threshold is currency-aware so a delta below the smallest
-      // displayable unit doesn't render as a misleading "+$0.00" or "+¥0".
+      // formatCurrency already renders the locale-appropriate minus sign
+      // for negatives. Below the smallest displayable unit (JPY: 1, USD:
+      // 0.01) we render formatCurrency(0) so a 0.001 delta doesn't slip
+      // through as "+$0.00" — otherwise prefix '+' for positive deltas
+      // and let formatCurrency render negatives natively.
       const minUnit = currentCurrency.value === 'JPY' ? 1 : 0.01
-      return change >= minUnit ? '+' + formatCurrency(change) : formatCurrency(change)
+      if (Math.abs(change) < minUnit) return formatCurrency(0)
+      return change > 0 ? '+' + formatCurrency(change) : formatCurrency(change)
     }
 
     const getChangeClass = (current, previous) => {
