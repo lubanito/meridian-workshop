@@ -283,11 +283,20 @@ class Task(BaseModel):
     id: str
     title: str
     # Tighten to the same Literal as the create request so a bad value in
-    # tasks.json fails loudly at boot instead of round-tripping to clients.
+    # tasks.json fails the import-time validation pass below — not on the
+    # first GET /api/tasks call, when an operator may not be watching.
     priority: Literal['low', 'medium', 'high']
     due_date: Optional[str] = None
     completed: bool = False
     created_date: str
+
+# Validate seeded tasks against the Task model at import time so a bad
+# priority (or any other model-violating value) in tasks.json fails the
+# server boot loudly instead of waiting for the first GET /api/tasks.
+# response_model on the route only validates *outgoing* responses — by
+# then the operator has long since walked away.
+for _t in tasks:
+    Task(**_t)
 
 class CreateTaskRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)

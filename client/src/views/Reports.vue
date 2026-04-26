@@ -149,7 +149,15 @@ export default {
     // status to the quarterly/monthly endpoints, so watching it would only
     // fire a redundant fetch and cause a loading flicker.
     const { selectedPeriod, selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, formatCurrency, localeTag, currentCurrency } = useI18n()
+    const { t, formatCurrency, localeTag, currentCurrency, currencyPrecision } = useI18n()
+
+    // Smallest visible currency unit, derived from useI18n's
+    // currencyPrecision (Intl-resolved per currency: USD=2 → 0.01, JPY=0
+    // → 1, KWD=3 → 0.001). Single source of truth shared with
+    // Restocking's roundLine and the PO modal's unitCostStep, so a third
+    // currency landing won't silently flip the "is this delta visible?"
+    // gate below.
+    const minDisplayUnit = computed(() => Math.pow(10, -currencyPrecision.value))
 
     const loading = ref(true)
     const error = ref(null)
@@ -254,22 +262,20 @@ export default {
     const getChangeValue = (current, previous) => {
       const change = current - previous
       // formatCurrency already renders the locale-appropriate minus sign
-      // for negatives. Below the smallest displayable unit (JPY: 1, USD:
-      // 0.01) we render formatCurrency(0) so a 0.001 delta doesn't slip
-      // through as "+$0.00" — otherwise prefix '+' for positive deltas
-      // and let formatCurrency render negatives natively.
-      const minUnit = currentCurrency.value === 'JPY' ? 1 : 0.01
-      if (Math.abs(change) < minUnit) return formatCurrency(0)
+      // for negatives. Below the smallest displayable unit we render
+      // formatCurrency(0) so a 0.001 delta doesn't slip through as
+      // "+$0.00" — otherwise prefix '+' for positive deltas and let
+      // formatCurrency render negatives natively.
+      if (Math.abs(change) < minDisplayUnit.value) return formatCurrency(0)
       return change > 0 ? '+' + formatCurrency(change) : formatCurrency(change)
     }
 
     const getChangeClass = (current, previous) => {
       const change = current - previous
-      // Gate on the same minUnit threshold as getChangeValue so a sub-unit
-      // delta (e.g. -0.001 USD) renders as $0.00 *without* the negative-
-      // change red tint — text and color must agree on what counts as zero.
-      const minUnit = currentCurrency.value === 'JPY' ? 1 : 0.01
-      if (Math.abs(change) < minUnit) return ''
+      // Same threshold as getChangeValue so a sub-unit delta renders as
+      // $0.00 *without* the negative-change red tint — text and color
+      // must agree on what counts as zero.
+      if (Math.abs(change) < minDisplayUnit.value) return ''
       if (change > 0) return 'positive-change'
       if (change < 0) return 'negative-change'
       return ''

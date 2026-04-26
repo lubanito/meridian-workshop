@@ -147,7 +147,7 @@
         <span class="draft-hint">{{ t('restocking.draftHint') }}</span>
       </div>
 
-      <div v-if="emptySelectionNotice" class="empty-selection-notice">
+      <div v-if="emptySelectionNotice" class="empty-selection-notice" role="status" aria-live="polite">
         {{ t('restocking.noItemsSelected') }}
       </div>
 

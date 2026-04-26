@@ -196,10 +196,13 @@ const { t, formatCurrency, formatDate, currencyPrecision } = useI18n()
 // would silently round 3-decimal currencies to two if a third locale
 // is added.
 const unitCostStep = computed(() => Math.pow(10, -currencyPrecision.value))
-// Mirror the server's Field(..., ge=0.01) so the form rejects sub-unit
-// values inline rather than relying on a 422 round-trip. The minimum is
-// one unit at the currency's display precision — same value as the step.
-const unitCostMin = computed(() => unitCostStep.value)
+// Mirror the server's currency-blind Field(..., ge=0.01): floor at the
+// MAX of the currency's display precision (so JPY rejects fractional
+// yen and KWD rejects sub-millidinar) and 0.01 (so a future
+// 3-or-more-digit currency can't pass client validation only to 422
+// at the server). When FIXME(money) lands per-currency precision
+// server-side, drop the 0.01 floor.
+const unitCostMin = computed(() => Math.max(unitCostStep.value, 0.01))
 
 // YYYY-MM-DD for the date-input `min` attribute. Recomputed each time
 // the modal opens so a session that's been idle past midnight doesn't
