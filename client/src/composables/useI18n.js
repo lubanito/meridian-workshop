@@ -190,7 +190,11 @@ export function useI18n() {
   return {
     t,
     setLocale,
-    currentLocale: readonly(currentLocale),
+    // Reuse the module-level readonly view rather than wrapping
+    // currentLocale a second time — the named export `localeRef` and
+    // this returned ref are now the same readonly proxy, not two
+    // independent ones over the same source.
+    currentLocale: localeRef,
     currentCurrency,
     localeTag,
     formatCurrency,

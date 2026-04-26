@@ -179,7 +179,23 @@ export default {
   name: 'Restocking',
   setup() {
     const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, formatCurrency, translateCategory, translateWarehouse } = useI18n()
+    const { t, formatCurrency, currentCurrency, localeTag, translateCategory, translateWarehouse } = useI18n()
+
+    // Per-currency multiplier for line-cost rounding. The budget walk and
+    // totalSelected sum many `qty * unit_cost` products as raw floats,
+    // and a single 0.1 + 0.2 style drift on a borderline pick can flip
+    // it over/under budget across reloads even when the data hasn't
+    // changed. Snapping each line to the currency grid (USD: 2dp, JPY:
+    // 0dp, KWD: 3dp) before summing kills that drift cheaply, without
+    // waiting on the FIXME(money) Decimal migration on the server.
+    const lineMultiplier = computed(() => {
+      const digits = new Intl.NumberFormat(localeTag.value, {
+        style: 'currency',
+        currency: currentCurrency.value
+      }).resolvedOptions().maximumFractionDigits
+      return Math.pow(10, digits)
+    })
+    const roundLine = (n) => Math.round(n * lineMultiplier.value) / lineMultiplier.value
 
     const inventory = ref([])
     const demandForecasts = ref([])
@@ -317,11 +333,16 @@ export default {
       }
     }
 
-    // Keep editedQtys in sync with recommendations. If the user has already
-    // edited a qty for a row that's still present after the new fetch
-    // (e.g. they typed a number, then changed a filter that excludes/includes
-    // the same warehouse+sku), preserve the edit. Only seed from the
-    // recommendation's default for rows we haven't seen yet.
+    // Keep editedQtys in sync with recommendations. If the user has
+    // already edited a qty for a row still present after the new fetch
+    // (recommendations narrows but the row survives), preserve the edit.
+    // Caveat: edits do NOT survive a filter that excludes the row and is
+    // then reverted — the intermediate fetch drops the rowKey from
+    // `next`, so the re-include reseeds from the recommendation default.
+    // Persisting edits across exclude/re-include cycles would need a
+    // separate "ever-seen" map; deliberately not added — the behavior
+    // matches the buyer's likely mental model (filter excludes a row →
+    // it's gone) and avoids an unbounded session-scoped map.
     watch(recommendations, (newRecs) => {
       const next = {}
       for (const item of newRecs) {
@@ -370,7 +391,7 @@ export default {
     const totalSelected = computed(() =>
       sortedRecommendations.value.reduce((sum, item) => {
         const qty = editedQtys.value[item.rowKey] ?? 0
-        return sum + qty * item.unit_cost
+        return sum + roundLine(qty * item.unit_cost)
       }, 0)
     )
 
@@ -405,7 +426,7 @@ export default {
       let running = 0
       for (const rec of sortedRecommendations.value) {
         const qty = editedQtys.value[rec.rowKey] ?? 0
-        const cost = qty * rec.unit_cost
+        const cost = roundLine(qty * rec.unit_cost)
         if (cost <= 0) continue
         if (running + cost > budgetCeiling.value) {
           flagged.add(rec.rowKey)
@@ -423,7 +444,7 @@ export default {
       sortedRecommendations.value.reduce((sum, item) => {
         if (overBudgetSkus.value.has(item.rowKey)) return sum
         const qty = editedQtys.value[item.rowKey] ?? 0
-        return sum + qty * item.unit_cost
+        return sum + roundLine(qty * item.unit_cost)
       }, 0)
     )
 
@@ -434,6 +455,19 @@ export default {
     // inventory + demand, not the backlog — so we keep this in-memory and
     // surface a "not yet submitted" banner.
     const previewDraftPOs = async () => {
+      // Defensive flush: walk every row's edited qty through normalizeQty
+      // so any input the user left empty/non-numeric is snapped to 0
+      // before we read editedQtys. updateQty deliberately ignores empty
+      // raw values to avoid cursor jumps mid-typing, which leaves
+      // editedQtys stale for that row until @blur fires. A real click
+      // forces blur first, but a programmatic caller (autosave timer,
+      // hotkey, parent-driven submit) wouldn't — this guards against it.
+      for (const item of sortedRecommendations.value) {
+        const current = editedQtys.value[item.rowKey]
+        if (current === undefined || current === null || Number.isNaN(current)) {
+          normalizeQty(item.rowKey, '')
+        }
+      }
       // Walk sortedRecommendations so the draft summary matches the table
       // order the buyer is looking at, not the raw inventory order.
       const selected = sortedRecommendations.value.filter(i => (editedQtys.value[i.rowKey] ?? 0) > 0)
@@ -461,7 +495,7 @@ export default {
         ...i,
         qty_to_order: editedQtys.value[i.rowKey] ?? 0
       }))
-      confirmedTotal.value = selected.reduce((sum, i) => sum + (editedQtys.value[i.rowKey] ?? 0) * i.unit_cost, 0)
+      confirmedTotal.value = selected.reduce((sum, i) => sum + roundLine((editedQtys.value[i.rowKey] ?? 0) * i.unit_cost), 0)
       successMessage.value = true
       await nextTick()
       successAlertRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })

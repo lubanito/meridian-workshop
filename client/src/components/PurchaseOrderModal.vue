@@ -280,6 +280,12 @@ watch(() => [props.isOpen, props.backlogItem], async ([open, item]) => {
     }
     // Move focus into the dialog after it mounts so the focus-trap
     // tab cycle has somewhere to start, and keyboard users land inside.
+    // Note: this only runs on the open transition (isOpen flipping
+    // false→true) and on backlogItem swap. If the parent flips `mode`
+    // from 'view' to 'create' while isOpen stays true (form fields
+    // appear), focus does not auto-jump to the new first input — the
+    // user keeps focus where it was. The current consumer (Backlog
+    // page) doesn't do that, so this is a documented edge case.
     await nextTick()
     const firstFocusable = dialogRef.value?.querySelector(FOCUSABLE)
     firstFocusable?.focus()

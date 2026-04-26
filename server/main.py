@@ -18,6 +18,24 @@ app = FastAPI(title="Factory Inventory Management System")
 # backlog_item_id once persistence lands.
 _purchase_order_lock = asyncio.Lock()
 
+# Refuse to boot under multi-worker uvicorn (each worker owns a private
+# copy of purchase_orders + _purchase_order_lock, so the 409 invariant is
+# silently broken across workers). This guard goes away once persistence
+# moves to a real store with a UNIQUE(backlog_item_id) constraint — see
+# FIXME(persistence) / FIXME(concurrency) below.
+try:
+    _web_concurrency = int(os.getenv("WEB_CONCURRENCY", "1"))
+except ValueError:
+    _web_concurrency = 1
+if _web_concurrency > 1:
+    raise RuntimeError(
+        f"WEB_CONCURRENCY={_web_concurrency} is unsafe with the in-memory "
+        "purchase_orders store: each worker holds a private copy and the "
+        "duplicate-PO check would silently let a second worker create a "
+        "second PO for the same backlog_item_id. Run with a single worker "
+        "until persistence is migrated to a DB with UNIQUE(backlog_item_id)."
+    )
+
 def _month_prefix(value: str) -> str:
     """Return the YYYY-MM portion of an order_date, ignoring any time
     component or timezone suffix (e.g. '2025-01-15T00:00:00Z' -> '2025-01').
@@ -201,15 +219,16 @@ def _validate_iso_date(value: str, *, allow_past: bool = True) -> str:
         )
     # Some fields (PO expected_delivery_date) must be today or later — the
     # client pins min=todayIso but a direct API call would otherwise let
-    # past dates land in state. Allow one day of slack so a buyer in any
-    # timezone (UTC-12 .. UTC+14) can submit their local "today" without
-    # the server rejecting it as past: ahead-of-UTC zones may have already
-    # rolled over to tomorrow_utc while still picking today_local; behind-
-    # UTC zones are still on yesterday_utc when picking today_local.
-    # Trade-off accepted: a UTC+0 buyer can also submit yesterday_utc, but
-    # that's a 1-day footgun, not a silent state corruption. The proper
-    # fix would carry the client timezone in the request and pin against
-    # today_local — out of scope for the demo.
+    # past dates land in state. Allow yesterday_utc through so a buyer
+    # behind UTC (e.g. UTC-12) whose local clock is still on the previous
+    # UTC day can submit what they see as "today" without rejection.
+    # Future dates are unaffected — the check only rejects parsed.date()
+    # strictly before earliest, so UTC+14 buyers picking tomorrow_utc as
+    # their local "today" pass trivially. Trade-off: any caller, including
+    # a UTC+0 buyer, can now submit yesterday_utc; that's a 1-day footgun,
+    # not silent state corruption. The proper fix would carry the client
+    # timezone in the request and pin against today_local — out of scope
+    # for the demo.
     if not allow_past:
         today_utc = datetime.now(timezone.utc).date()
         earliest = today_utc - timedelta(days=1)
@@ -231,6 +250,12 @@ class CreatePurchaseOrderRequest(BaseModel):
     quantity: int = Field(..., gt=0, le=1_000_000)
     # ge=0.01 instead of gt=0 — the smallest currency unit that won't drift
     # via float multiplication on multi-row totals. Anything smaller is a 422.
+    # Demo-grade simplification: the bound is currency-blind, so a direct
+    # API call could submit 0.5 JPY (which has no subunit). The client
+    # form drives unit_cost_min off Intl per-currency precision and
+    # rejects sub-unit values inline; the proper server-side fix is to
+    # carry the currency in the request and validate per-currency, which
+    # rolls into the FIXME(money) Decimal migration.
     # le=1_000_000 caps a single line item at $1M / ¥1M — generous for the
     # demo, hostile to the same overflow-via-input attack as quantity above.
     unit_cost: float = Field(..., ge=0.01, le=1_000_000)
