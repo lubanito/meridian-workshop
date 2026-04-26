@@ -21,11 +21,17 @@ const buildUrl = (path, params) => {
 // Backend uses snake_case + boolean `completed`; the frontend uses
 // camelCase `dueDate` and string `status` ('pending' | 'completed') so that
 // API-backed and seeded mock tasks share one shape.
-const toClientTask = (t) => ({
-  ...t,
-  dueDate: t.due_date ?? t.dueDate ?? null,
-  status: t.completed ? 'completed' : 'pending'
-})
+const toClientTask = (t) => {
+  // Strip the snake_case keys we're remapping so the resulting object
+  // has only the camelCase frontend shape — keeping both shapes around
+  // would confuse anyone debugging task state.
+  const { due_date, completed, ...rest } = t
+  return {
+    ...rest,
+    dueDate: due_date ?? t.dueDate ?? null,
+    status: completed ? 'completed' : 'pending'
+  }
+}
 
 const toServerTask = ({ title, priority, dueDate }) => ({
   title,

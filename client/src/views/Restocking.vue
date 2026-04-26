@@ -303,7 +303,10 @@ export default {
       // Sort is intentionally cost-independent so the row a buyer is
       // typing into can't move while they edit. Cost is rendered as a
       // read-only column for context.
-      const priorityOrder = { High: 0, Medium: 1 }
+      // Low is unreachable today (recommendations filters before assigning)
+      // but kept here so a future code path adding 'Low' doesn't return
+      // NaN from the comparator and trigger implementation-defined sort.
+      const priorityOrder = { High: 0, Medium: 1, Low: 2 }
       return [...recommendations.value].sort((a, b) => {
         const pDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
         if (pDiff !== 0) return pDiff
