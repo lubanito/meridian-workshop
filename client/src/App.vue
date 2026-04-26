@@ -201,6 +201,10 @@ export default {
       // data-theme on documentElement (e.g. a future devtools toggle or
       // a sibling app sharing the page). Toggle/applyTheme remain the
       // canonical writers; the observer just guards against drift.
+      // The callback must stay idempotent — it only reads the attribute
+      // it observes and writes a derived ref. Adding a side effect here
+      // that re-mutates data-theme would loop because each observed
+      // mutation would trigger another via this very callback.
       themeObserver = new MutationObserver(() => {
         isDark.value = document.documentElement.getAttribute('data-theme') === 'dark'
       })

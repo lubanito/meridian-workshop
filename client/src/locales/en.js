@@ -424,6 +424,7 @@ export default {
     supplierPlaceholder: 'Enter supplier name',
     quantity: 'Quantity',
     unitCost: 'Unit Cost',
+    unitCostHint: 'Minimum {min}',
     expectedDelivery: 'Expected Delivery Date',
     notes: 'Notes (optional)',
     notesPlaceholder: 'Additional notes...',

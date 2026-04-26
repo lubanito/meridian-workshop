@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 import uuid
@@ -9,6 +10,13 @@ from pydantic import BaseModel, Field, field_validator
 from mock_data import inventory_items, orders, demand_forecasts, backlog_items, spending_summary, monthly_spending, category_spending, recent_transactions, purchase_orders, tasks
 
 app = FastAPI(title="Factory Inventory Management System")
+
+# Stop-gap for the FIXME(concurrency) duplicate-PO race below: serialize
+# the read-then-append on the in-memory list so two overlapping POSTs
+# can't both pass the duplicate check before either appends. Won't help
+# multi-worker uvicorn — the real fix is a DB UNIQUE constraint on
+# backlog_item_id once persistence lands.
+_purchase_order_lock = asyncio.Lock()
 
 def _month_prefix(value: str) -> str:
     """Return the YYYY-MM portion of an order_date, ignoring any time
@@ -220,10 +228,10 @@ class CreatePurchaseOrderRequest(BaseModel):
     # ge=0.01 instead of gt=0 — the smallest currency unit that won't drift
     # via float multiplication on multi-row totals. Anything smaller is a 422.
     unit_cost: float = Field(..., ge=0.01)
-    # max_length is generous enough for ISO 8601 date *and* datetime
-    # variants without bloating error messages — _validate_iso_date below
-    # rejects everything that isn't strict YYYY-MM-DD anyway.
-    expected_delivery_date: str = Field(..., max_length=32)
+    # max_length matches the strict YYYY-MM-DD shape the validator below
+    # enforces — anything longer is a typo or a probe and 422s before the
+    # validator even sees it, keeping error messages tight.
+    expected_delivery_date: str = Field(..., max_length=10)
     notes: Optional[str] = Field(default=None, max_length=2000)
 
     @field_validator('expected_delivery_date')
@@ -512,7 +520,7 @@ def toggle_task(task_id: str):
     return task
 
 @app.post("/api/purchase-orders", response_model=PurchaseOrder, status_code=201)
-def create_purchase_order(req: CreatePurchaseOrderRequest):
+async def create_purchase_order(req: CreatePurchaseOrderRequest):
     """Create a purchase order for a backlog item.
     Rejects duplicates: a backlog item can have at most one open PO. The
     paired GET endpoint only returns the first match, so silently allowing a
@@ -520,20 +528,24 @@ def create_purchase_order(req: CreatePurchaseOrderRequest):
     backlog = next((b for b in backlog_items if b["id"] == req.backlog_item_id), None)
     if not backlog:
         raise HTTPException(status_code=404, detail=f"Backlog item {req.backlog_item_id} not found")
-    if any(p["backlog_item_id"] == req.backlog_item_id for p in purchase_orders):
-        raise HTTPException(status_code=409, detail=f"A purchase order already exists for backlog item {req.backlog_item_id}")
-    po = {
-        "id": f"PO-{uuid.uuid4()}",
-        "backlog_item_id": req.backlog_item_id,
-        "supplier_name": req.supplier_name,
-        "quantity": req.quantity,
-        "unit_cost": req.unit_cost,
-        "expected_delivery_date": req.expected_delivery_date,
-        "status": "Pending",
-        "created_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "notes": req.notes
-    }
-    purchase_orders.append(po)
+    # Serialize the duplicate check + append so two overlapping requests
+    # in this worker can't both pass the 409 gate. See _purchase_order_lock
+    # comment above and FIXME(concurrency) below for the multi-worker case.
+    async with _purchase_order_lock:
+        if any(p["backlog_item_id"] == req.backlog_item_id for p in purchase_orders):
+            raise HTTPException(status_code=409, detail=f"A purchase order already exists for backlog item {req.backlog_item_id}")
+        po = {
+            "id": f"PO-{uuid.uuid4()}",
+            "backlog_item_id": req.backlog_item_id,
+            "supplier_name": req.supplier_name,
+            "quantity": req.quantity,
+            "unit_cost": req.unit_cost,
+            "expected_delivery_date": req.expected_delivery_date,
+            "status": "Pending",
+            "created_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+            "notes": req.notes
+        }
+        purchase_orders.append(po)
     return po
 
 @app.get("/api/backlog/{backlog_item_id}/purchase-order", response_model=PurchaseOrder)

@@ -423,6 +423,7 @@ export default {
     supplierPlaceholder: '仕入先名を入力',
     quantity: '数量',
     unitCost: '単価',
+    unitCostHint: '最小値 {min}',
     expectedDelivery: '納期予定日',
     notes: '備考（任意）',
     notesPlaceholder: '追加メモ...',

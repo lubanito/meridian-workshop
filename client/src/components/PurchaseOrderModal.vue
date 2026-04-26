@@ -46,7 +46,8 @@
                   </div>
                   <div class="form-field">
                     <label for="po-unit-cost" class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
-                    <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" :min="unitCostMin" :step="unitCostStep" required class="form-input" />
+                    <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" :min="unitCostMin" :step="unitCostStep" required class="form-input" aria-describedby="po-unit-cost-hint" />
+                    <small id="po-unit-cost-hint" class="form-hint">{{ t('purchaseOrder.unitCostHint', { min: formatCurrency(unitCostMin) }) }}</small>
                   </div>
                   <div class="form-field">
                     <label for="po-delivery-date" class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
@@ -252,10 +253,16 @@ watch(() => [props.isOpen, props.backlogItem], async ([open, item]) => {
     if (!item) return
     // Capture the element that opened the dialog so focus can be
     // restored to it on close — WCAG 2.4.3 expects focus to return
-    // to a logical predecessor when a modal dismisses.
-    triggerEl.value = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null
+    // to a logical predecessor when a modal dismisses. Skip if we
+    // already have a trigger captured: this watcher also fires when
+    // the parent swaps backlogItem while isOpen stays true, and
+    // re-capturing then would clobber the real opener with whatever
+    // is currently focused *inside* the modal (typically a form input).
+    if (!triggerEl.value) {
+      triggerEl.value = document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null
+    }
     document.addEventListener('keydown', onKeydown)
     todayIso.value = new Date().toISOString().slice(0, 10)
     if (props.mode === 'create') {
@@ -431,6 +438,11 @@ const submit = async () => {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-text-secondary);
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }
 
 .form-input {
