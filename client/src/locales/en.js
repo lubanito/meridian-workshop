@@ -256,7 +256,7 @@ export default {
       withinBudgetHint: 'Within budget: {amount} (excludes flagged rows)',
       total: 'Total:'
     },
-    generatePO: 'Preview Draft',
+    previewDraft: 'Preview Draft',
     draftHint: 'Builds an in-app preview only — no orders are submitted to suppliers.',
     noItemsSelected: 'Set a quantity above zero on at least one row to preview a draft.',
     noRecommendations: 'No restocking recommendations — every SKU is at or above its reorder point and demand is steady.',

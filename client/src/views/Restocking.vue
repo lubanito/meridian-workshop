@@ -141,7 +141,7 @@
 
       <div class="actions-row">
         <button class="btn-primary" @click="previewDraftPOs">
-          {{ t('restocking.generatePO') }}
+          {{ t('restocking.previewDraft') }}
         </button>
         <span class="draft-hint">{{ t('restocking.draftHint') }}</span>
       </div>
