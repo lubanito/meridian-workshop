@@ -1,11 +1,11 @@
 import os
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from mock_data import inventory_items, orders, demand_forecasts, backlog_items, spending_summary, monthly_spending, category_spending, recent_transactions, purchase_orders, tasks
 
 app = FastAPI(title="Factory Inventory Management System")
@@ -150,18 +150,30 @@ class PurchaseOrder(BaseModel):
     created_date: str
     notes: Optional[str] = None
 
-# ISO 8601 calendar date — matches the YYYY-MM-DD format used everywhere
-# else in the dataset; rejecting other shapes at the boundary keeps the
-# rest of the codebase free of date-parsing defensive checks.
-DATE_PATTERN = r'^\d{4}-\d{2}-\d{2}$'
+# ISO 8601 calendar date validators. A bare regex like ^\d{4}-\d{2}-\d{2}$
+# accepts '2025-13-99' / '2025-02-30' — full calendar validity needs a real
+# parse. We keep the wire type as str so the rest of the codebase doesn't
+# need to change, but route through date.fromisoformat() so invalid
+# calendar dates get a 422 with a useful error.
+def _validate_iso_date(value: str) -> str:
+    try:
+        date.fromisoformat(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"expected ISO 8601 date (YYYY-MM-DD), got {value!r}") from exc
+    return value
 
 class CreatePurchaseOrderRequest(BaseModel):
     backlog_item_id: str
     supplier_name: str = Field(..., min_length=1, max_length=200)
     quantity: int = Field(..., gt=0)
     unit_cost: float = Field(..., gt=0)
-    expected_delivery_date: str = Field(..., pattern=DATE_PATTERN)
+    expected_delivery_date: str
     notes: Optional[str] = Field(default=None, max_length=2000)
+
+    @field_validator('expected_delivery_date')
+    @classmethod
+    def _check_delivery_date(cls, v: str) -> str:
+        return _validate_iso_date(v)
 
 class Task(BaseModel):
     id: str
@@ -174,7 +186,14 @@ class Task(BaseModel):
 class CreateTaskRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     priority: Literal['low', 'medium', 'high'] = 'medium'
-    due_date: Optional[str] = Field(default=None, pattern=DATE_PATTERN)
+    due_date: Optional[str] = None
+
+    @field_validator('due_date')
+    @classmethod
+    def _check_due_date(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        return _validate_iso_date(v)
 
 # API endpoints
 @app.get("/")
@@ -373,6 +392,12 @@ def get_monthly_trends(
 # FIXME(persistence): tasks/purchase_orders are module-level Python lists; any
 # state created via the API is wiped on server restart. Move to a real store
 # (SQLite / Postgres) before anything beyond the demo.
+# FIXME(concurrency): the duplicate-PO check in create_purchase_order is
+# read-then-append on a shared list, not atomic. Two concurrent POSTs for the
+# same backlog_item_id (single uvicorn worker with overlapping awaits, or any
+# multi-worker setup) can both pass the check and both append, defeating the
+# 409. The DB-backed replacement should rely on a UNIQUE constraint on
+# backlog_item_id rather than an application-level scan.
 @app.get("/api/tasks", response_model=List[Task])
 def get_tasks():
     """Get all tasks"""

@@ -136,6 +136,10 @@ const emit = defineEmits(['close', 'po-created'])
 // pick the wrong dialog when multiple modals are open simultaneously.
 const dialogRef = ref(null)
 
+// Element that opened the dialog — captured on open so we can restore
+// focus to it on close (WCAG 2.4.3 — Focus Order).
+const triggerEl = ref(null)
+
 // Selector for "focusable" descendants when trapping Tab inside the modal.
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
@@ -155,6 +159,14 @@ const onKeydown = (e) => {
   if (focusables.length === 0) return
   const first = focusables[0]
   const last = focusables[focusables.length - 1]
+  // Defensive: if focus is outside the dialog (e.g. a Teleport sibling
+  // grabbed it), pull it back to the first focusable rather than letting
+  // Tab walk into non-modal content.
+  if (!dialog.contains(document.activeElement)) {
+    e.preventDefault()
+    first.focus()
+    return
+  }
   if (e.shiftKey && document.activeElement === first) {
     e.preventDefault()
     last.focus()
@@ -203,6 +215,12 @@ const poLoadError = ref('')
 // open-time form/PO setup, so the two concerns can't diverge.
 watch(() => props.isOpen, async (open) => {
   if (open) {
+    // Capture the element that opened the dialog so focus can be
+    // restored to it on close — WCAG 2.4.3 expects focus to return
+    // to a logical predecessor when a modal dismisses.
+    triggerEl.value = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null
     document.addEventListener('keydown', onKeydown)
     todayIso.value = new Date().toISOString().slice(0, 10)
     if (props.mode === 'create') {
@@ -224,6 +242,14 @@ watch(() => props.isOpen, async (open) => {
     firstFocusable?.focus()
   } else {
     document.removeEventListener('keydown', onKeydown)
+    // Restore focus to the trigger if it's still in the document and
+    // visible. Guard against the trigger being unmounted between open
+    // and close (e.g. a route change replaced the page).
+    const trigger = triggerEl.value
+    if (trigger && document.contains(trigger) && typeof trigger.focus === 'function') {
+      trigger.focus()
+    }
+    triggerEl.value = null
   }
 })
 

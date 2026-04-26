@@ -61,6 +61,7 @@
                 <th>{{ t('inventory.table.sku') }}</th>
                 <th>{{ t('restocking.table.name') }}</th>
                 <th>{{ t('restocking.table.category') }}</th>
+                <th>{{ t('inventory.table.warehouse') }}</th>
                 <th>{{ t('restocking.table.onHand') }}</th>
                 <th>{{ t('restocking.table.reorderPoint') }}</th>
                 <th>{{ t('restocking.table.demandForecast') }}</th>
@@ -72,8 +73,8 @@
             <tbody>
               <tr
                 v-for="item in sortedRecommendations"
-                :key="item.sku"
-                :class="{ 'row-over-budget': overBudgetSkus.has(item.sku) }"
+                :key="item.rowKey"
+                :class="{ 'row-over-budget': overBudgetSkus.has(item.rowKey) }"
               >
                 <td>
                   <span class="badge" :class="item.priority.toLowerCase()">
@@ -83,6 +84,7 @@
                 <td class="sku-cell">{{ item.sku }}</td>
                 <td>{{ item.name }}</td>
                 <td>{{ translateCategory(item.category) }}</td>
+                <td>{{ translateWarehouse(item.warehouse) }}</td>
                 <td :class="{ 'text-danger': item.quantity_on_hand <= item.reorder_point }">
                   {{ item.quantity_on_hand.toLocaleString() }}
                 </td>
@@ -93,17 +95,17 @@
                 </td>
                 <td>
                   <input
-                    :value="editedQtys[item.sku]"
+                    :value="editedQtys[item.rowKey]"
                     type="number"
                     min="0"
                     class="qty-input"
-                    @input="updateQty(item.sku, $event.target.value)"
+                    @input="updateQty(item.rowKey, $event.target.value)"
                   />
                 </td>
                 <td>{{ formatCurrency(item.unit_cost) }}</td>
                 <td>
-                  <span class="est-cost">{{ formatCurrency(editedQtys[item.sku] * item.unit_cost) }}</span>
-                  <span v-if="overBudgetSkus.has(item.sku)" class="badge danger over-budget-badge">{{ t('restocking.overBudget') }}</span>
+                  <span class="est-cost">{{ formatCurrency(editedQtys[item.rowKey] * item.unit_cost) }}</span>
+                  <span v-if="overBudgetSkus.has(item.rowKey)" class="badge danger over-budget-badge">{{ t('restocking.overBudget') }}</span>
                 </td>
               </tr>
             </tbody>
@@ -148,7 +150,7 @@
       <div v-if="successMessage" ref="successAlertRef" class="success-alert">
         <strong>{{ t('restocking.successMessage') }}</strong>
         <ul>
-          <li v-for="item in confirmedItems" :key="item.sku">
+          <li v-for="item in confirmedItems" :key="item.rowKey">
             {{ item.sku }} — {{ item.name }}: {{ item.qty_to_order.toLocaleString() }} {{ t('purchaseOrder.units') }} @ {{ formatCurrency(item.unit_cost) }} = {{ formatCurrency(item.qty_to_order * item.unit_cost) }}
           </li>
         </ul>
@@ -174,7 +176,7 @@ export default {
   name: 'Restocking',
   setup() {
     const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, formatCurrency, translateCategory } = useI18n()
+    const { t, formatCurrency, translateCategory, translateWarehouse } = useI18n()
 
     const inventory = ref([])
     const demandForecasts = ref([])
@@ -252,6 +254,10 @@ export default {
         }
 
         results.push({
+          // Compound key — same SKU can exist in multiple warehouses, so
+          // keying by sku alone would collide and Vue would dedupe rows
+          // (a qty edit on one warehouse would silently apply to both).
+          rowKey: `${item.warehouse}|${item.sku}`,
           sku: item.sku,
           name: item.name,
           category: item.category,
@@ -271,19 +277,21 @@ export default {
     // than inline in the template, so the rule is grep-able and
     // unit-testable. POs are placed in whole units; fractional qty
     // would also confuse the unit_cost × qty multiplication downstream.
-    const updateQty = (sku, raw) => {
-      editedQtys.value[sku] = Math.max(0, Math.floor(Number(raw) || 0))
+    // Keyed by rowKey (warehouse|sku) — see the recommendations builder
+    // for why a bare SKU isn't unique.
+    const updateQty = (rowKey, raw) => {
+      editedQtys.value[rowKey] = Math.max(0, Math.floor(Number(raw) || 0))
     }
 
     // Keep editedQtys in sync with recommendations. If the user has already
-    // edited a qty for an SKU that's still present after the new fetch
+    // edited a qty for a row that's still present after the new fetch
     // (e.g. they typed a number, then changed a filter that excludes/includes
-    // the same SKU), preserve the edit. Only seed from the recommendation's
-    // default for SKUs we haven't seen yet.
+    // the same warehouse+sku), preserve the edit. Only seed from the
+    // recommendation's default for rows we haven't seen yet.
     watch(recommendations, (newRecs) => {
       const next = {}
       for (const item of newRecs) {
-        next[item.sku] = editedQtys.value[item.sku] ?? item.recommended_qty
+        next[item.rowKey] = editedQtys.value[item.rowKey] ?? item.recommended_qty
       }
       editedQtys.value = next
     }, { immediate: true })
@@ -321,7 +329,7 @@ export default {
     // walks, keeping the budget bar and per-row badges consistent.
     const totalSelected = computed(() =>
       sortedRecommendations.value.reduce((sum, item) => {
-        const qty = editedQtys.value[item.sku] ?? 0
+        const qty = editedQtys.value[item.rowKey] ?? 0
         return sum + qty * item.unit_cost
       }, 0)
     )
@@ -353,19 +361,19 @@ export default {
     // the user's picks, not a packing-optimal value.
     const overBudgetSkus = computed(() => {
       if (budgetCeiling.value <= 0) return new Set()
-      const skus = new Set()
+      const flagged = new Set()
       let running = 0
       for (const rec of sortedRecommendations.value) {
-        const qty = editedQtys.value[rec.sku] ?? 0
+        const qty = editedQtys.value[rec.rowKey] ?? 0
         const cost = qty * rec.unit_cost
         if (cost <= 0) continue
         if (running + cost > budgetCeiling.value) {
-          skus.add(rec.sku)
+          flagged.add(rec.rowKey)
         } else {
           running += cost
         }
       }
-      return skus
+      return flagged
     })
 
     // Sum excluding rows the over-budget walk has flagged — i.e. what would
@@ -373,8 +381,8 @@ export default {
     // reads top-to-bottom for a future maintainer.
     const totalWithinBudget = computed(() =>
       sortedRecommendations.value.reduce((sum, item) => {
-        if (overBudgetSkus.value.has(item.sku)) return sum
-        const qty = editedQtys.value[item.sku] ?? 0
+        if (overBudgetSkus.value.has(item.rowKey)) return sum
+        const qty = editedQtys.value[item.rowKey] ?? 0
         return sum + qty * item.unit_cost
       }, 0)
     )
@@ -388,7 +396,7 @@ export default {
     const previewDraftPOs = async () => {
       // Walk sortedRecommendations so the draft summary matches the table
       // order the buyer is looking at, not the raw inventory order.
-      const selected = sortedRecommendations.value.filter(i => (editedQtys.value[i.sku] ?? 0) > 0)
+      const selected = sortedRecommendations.value.filter(i => (editedQtys.value[i.rowKey] ?? 0) > 0)
       if (selected.length === 0) {
         // Surface a transient inline notice instead of a silent no-op so
         // a user who's zeroed everything out gets feedback. Track the
@@ -411,9 +419,9 @@ export default {
       emptySelectionNotice.value = false
       confirmedItems.value = selected.map(i => ({
         ...i,
-        qty_to_order: editedQtys.value[i.sku] ?? 0
+        qty_to_order: editedQtys.value[i.rowKey] ?? 0
       }))
-      confirmedTotal.value = selected.reduce((sum, i) => sum + (editedQtys.value[i.sku] ?? 0) * i.unit_cost, 0)
+      confirmedTotal.value = selected.reduce((sum, i) => sum + (editedQtys.value[i.rowKey] ?? 0) * i.unit_cost, 0)
       successMessage.value = true
       await nextTick()
       successAlertRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -440,6 +448,7 @@ export default {
       t,
       formatCurrency,
       translateCategory,
+      translateWarehouse,
       loading,
       error,
       budgetCeiling,
