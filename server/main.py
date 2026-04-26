@@ -536,15 +536,23 @@ def create_task(req: CreateTaskRequest):
 @app.delete("/api/tasks/{task_id}", status_code=204)
 def delete_task(task_id: str):
     """Delete a task.
-    Intentionally not under _purchase_order_lock-style serialization: a
-    racing second delete just hits 404 (idempotent end state — the task
-    is gone), which is the correct semantic. The dup-PO race needed a
-    lock because the second writer would have appended a *new* row,
-    silently breaking the one-PO-per-backlog invariant."""
-    idx = next((i for i, t in enumerate(tasks) if t["id"] == task_id), None)
-    if idx is None:
+    Resolve the task by reference (not by index) before mutating: FastAPI
+    runs sync routes in a threadpool, so two concurrent deletes targeting
+    *different* tasks could race on a shared index — thread A pops idx 3,
+    the list shifts, thread B's pre-computed idx 5 then points at the
+    wrong task or raises IndexError. list.remove(task) on the captured
+    dict is GIL-atomic in CPython and stays correct under interleaving.
+    Same-task-id races still converge to the idempotent "task is gone"
+    end state (404 on the loser), which is the correct semantic."""
+    task = next((t for t in tasks if t["id"] == task_id), None)
+    if task is None:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
-    tasks.pop(idx)
+    try:
+        tasks.remove(task)
+    except ValueError:
+        # Another thread already removed this exact task between our
+        # next() lookup and the remove() — same-id race, same outcome.
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
 
 @app.patch("/api/tasks/{task_id}", response_model=Task)
 def toggle_task(task_id: str):
