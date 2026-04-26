@@ -179,7 +179,7 @@ export default {
   name: 'Restocking',
   setup() {
     const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, formatCurrency, currentCurrency, localeTag, translateCategory, translateWarehouse } = useI18n()
+    const { t, formatCurrency, currencyPrecision, translateCategory, translateWarehouse } = useI18n()
 
     // Per-currency multiplier for line-cost rounding. The budget walk and
     // totalSelected sum many `qty * unit_cost` products as raw floats,
@@ -188,13 +188,10 @@ export default {
     // changed. Snapping each line to the currency grid (USD: 2dp, JPY:
     // 0dp, KWD: 3dp) before summing kills that drift cheaply, without
     // waiting on the FIXME(money) Decimal migration on the server.
-    const lineMultiplier = computed(() => {
-      const digits = new Intl.NumberFormat(localeTag.value, {
-        style: 'currency',
-        currency: currentCurrency.value
-      }).resolvedOptions().maximumFractionDigits
-      return Math.pow(10, digits)
-    })
+    // currencyPrecision is the Intl-derived fraction-digits getter on
+    // useI18n — same source of truth as PurchaseOrderModal's unit-cost
+    // step/min, so the two can't drift on a locale change.
+    const lineMultiplier = computed(() => Math.pow(10, currencyPrecision.value))
     const roundLine = (n) => Math.round(n * lineMultiplier.value) / lineMultiplier.value
 
     const inventory = ref([])

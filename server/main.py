@@ -514,6 +514,11 @@ def get_monthly_trends(
 # race ever does land two POs, the second one is invisible to the UI until
 # it's hand-fixed in the data, which is another reason the DB unique
 # constraint is the right primitive (not an application-level scan).
+# Related: get_purchase_order_for_backlog_item is a sync def, so it runs
+# in the threadpool and iterates purchase_orders without the asyncio
+# lock. CPython's GIL keeps the iteration from crashing, but a read
+# landing mid-append could miss a brand-new PO and surface a false 404.
+# Same DB UNIQUE-constraint + transactional read fix retires it.
 # FIXME(money): unit_cost / total_value / order totals are all carried as
 # float. Multi-line aggregations (Restocking budget walk, dashboard
 # total_orders_value) accumulate float error. The DB-backed rewrite should

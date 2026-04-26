@@ -34,8 +34,22 @@ const currentCurrency = computed(() => {
   return currentLocale.value === 'ja' ? 'JPY' : 'USD'
 })
 
-// Bare-language → BCP 47 tag, used for Intl APIs that need an unambiguous region
+// Bare-language → BCP 47 tag, used for Intl APIs that need an unambiguous region.
+// Adding a third locale means adding it here too — the resolveLocaleTag()
+// helper below logs a one-time console.warn on a missing entry so the
+// drift surfaces in the dev console instead of silently falling back to
+// "Intl picks an arbitrary region" behavior.
 const BCP47_TAGS = { en: 'en-US', ja: 'ja-JP' }
+const _warnedMissingTag = new Set()
+const resolveLocaleTag = (locale) => {
+  const tag = BCP47_TAGS[locale]
+  if (tag) return tag
+  if (typeof console !== 'undefined' && !_warnedMissingTag.has(locale)) {
+    _warnedMissingTag.add(locale)
+    console.warn(`[useI18n] no BCP 47 tag mapped for locale ${JSON.stringify(locale)} — Intl will pick a region. Add it to BCP47_TAGS.`)
+  }
+  return locale
+}
 
 // English category label -> i18n key. Module-scoped so it isn't reallocated
 // on every useI18n() call. Centralised so Dashboard, Inventory, and
@@ -127,17 +141,29 @@ export function useI18n() {
     if (!value) return '—'
     const d = new Date(value)
     if (Number.isNaN(d.getTime())) return '—'
-    return new Intl.DateTimeFormat(BCP47_TAGS[currentLocale.value] ?? currentLocale.value, opts).format(d)
+    return new Intl.DateTimeFormat(resolveLocaleTag(currentLocale.value), opts).format(d)
   }
 
   const formatCurrency = (num) => {
     const n = Number(num)
     if (!Number.isFinite(n)) return '—'
-    return n.toLocaleString(BCP47_TAGS[currentLocale.value] ?? currentLocale.value, {
+    return n.toLocaleString(resolveLocaleTag(currentLocale.value), {
       style: 'currency',
       currency: currentCurrency.value
     })
   }
+
+  // Per-currency display precision driven off Intl's resolvedOptions —
+  // USD → 2 (display .01), JPY → 0 (display 1), KWD → 3 (display .001).
+  // Single source of truth for both PurchaseOrderModal's unitCostStep /
+  // unitCostMin and Restocking's roundLine multiplier so the two can't
+  // drift if the locale set ever changes.
+  const currencyPrecision = computed(() => {
+    return new Intl.NumberFormat(resolveLocaleTag(currentLocale.value), {
+      style: 'currency',
+      currency: currentCurrency.value
+    }).resolvedOptions().maximumFractionDigits
+  })
 
   const translateCategory = (category) =>
     CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category]) : category
@@ -186,8 +212,10 @@ export function useI18n() {
 
   // BCP 47 tag for the active locale ('en' -> 'en-US', 'ja' -> 'ja-JP').
   // Use this for any Intl API call so the browser can't pick an
-  // arbitrary region for grouping / month-name styles.
-  const localeTag = computed(() => BCP47_TAGS[currentLocale.value] ?? currentLocale.value)
+  // arbitrary region for grouping / month-name styles. Routed through
+  // resolveLocaleTag so a missing entry in BCP47_TAGS surfaces as a
+  // dev-console warning instead of silent fallback.
+  const localeTag = computed(() => resolveLocaleTag(currentLocale.value))
 
   return {
     t,
@@ -199,6 +227,7 @@ export function useI18n() {
     currentLocale: localeRef,
     currentCurrency,
     localeTag,
+    currencyPrecision,
     formatCurrency,
     formatDate,
     availableLocales,

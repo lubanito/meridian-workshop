@@ -186,19 +186,16 @@ const onKeydown = (e) => {
   }
 }
 
-const { t, formatCurrency, formatDate, currentCurrency, localeTag } = useI18n()
+const { t, formatCurrency, formatDate, currencyPrecision } = useI18n()
 
-// Drive both step and min off Intl's per-currency fraction digits — JPY → 0
-// (step 1), USD → 2 (step 0.01), KWD → 3 (step 0.001) — same source of
-// truth as formatCurrency. A hardcoded {JPY: 1, else: 0.01} branch would
-// silently round 3-decimal currencies to two if a third locale is added.
-const unitCostStep = computed(() => {
-  const digits = new Intl.NumberFormat(localeTag.value, {
-    style: 'currency',
-    currency: currentCurrency.value
-  }).resolvedOptions().maximumFractionDigits
-  return Math.pow(10, -digits)
-})
+// Drive both step and min off Intl's per-currency fraction digits via
+// useI18n#currencyPrecision — JPY → 0 (step 1), USD → 2 (step 0.01),
+// KWD → 3 (step 0.001). Single source of truth shared with Restocking's
+// roundLine multiplier so the form input and the budget walk can't
+// drift on a locale change. A hardcoded {JPY: 1, else: 0.01} branch
+// would silently round 3-decimal currencies to two if a third locale
+// is added.
+const unitCostStep = computed(() => Math.pow(10, -currencyPrecision.value))
 // Mirror the server's Field(..., ge=0.01) so the form rejects sub-unit
 // values inline rather than relying on a 422 round-trip. The minimum is
 // one unit at the currency's display precision — same value as the step.

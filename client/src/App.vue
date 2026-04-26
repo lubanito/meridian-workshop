@@ -61,7 +61,7 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { api } from './api'
 import { useAuth } from './composables/useAuth'
 import { useI18n } from './composables/useI18n'
@@ -182,8 +182,6 @@ export default {
       }
     }
 
-    let themeObserver = null
-
     onMounted(() => {
       loadTasks()
       // Theme attribute may already be set by index.html's pre-paint
@@ -197,26 +195,6 @@ export default {
           applyTheme(true)
         }
       }
-      // Belt-and-suspenders: keep isDark in sync if anything else mutates
-      // data-theme on documentElement (e.g. a future devtools toggle or
-      // a sibling app sharing the page). Toggle/applyTheme remain the
-      // canonical writers; the observer just guards against drift.
-      // The callback must stay idempotent — it only reads the attribute
-      // it observes and writes a derived ref. Adding a side effect here
-      // that re-mutates data-theme would loop because each observed
-      // mutation would trigger another via this very callback.
-      themeObserver = new MutationObserver(() => {
-        isDark.value = document.documentElement.getAttribute('data-theme') === 'dark'
-      })
-      themeObserver.observe(document.documentElement, {
-        attributes: true,
-        attributeFilter: ['data-theme']
-      })
-    })
-
-    onUnmounted(() => {
-      themeObserver?.disconnect()
-      themeObserver = null
     })
 
     return {
