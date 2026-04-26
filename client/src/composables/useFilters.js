@@ -23,21 +23,27 @@ export function useFilters() {
     selectedStatus.value = 'all'
   }
 
-  // Get current filters as an object for API calls
-  const getCurrentFilters = () => {
-    const filters = {
-      warehouse: selectedLocation.value,
-      category: selectedCategory.value,
-      status: selectedStatus.value
-    }
-
-    // Map period to month format for API
-    if (selectedPeriod.value !== 'all') {
-      filters.month = selectedPeriod.value
-    }
-
-    return filters
-  }
+  /**
+   * Get current filters as an object for API calls.
+   *
+   * Always returns all four keys (warehouse / category / status / month)
+   * so the shape is stable across views — but each value can be the
+   * literal string 'all', meaning "no filter on this dimension". The
+   * contract is that **consumers must strip 'all' values before
+   * forwarding** to the server: api.js#reportParams already does this
+   * by skipping any value === 'all' when building the URLSearchParams.
+   * If you wire a new endpoint that hits a stricter validator, route
+   * the call through api.js (don't roll your own URLSearchParams), or
+   * the request will arrive with month=all / status=all and 422.
+   *
+   * @returns {{ warehouse: string, category: string, status: string, month: string }}
+   */
+  const getCurrentFilters = () => ({
+    warehouse: selectedLocation.value,
+    category: selectedCategory.value,
+    status: selectedStatus.value,
+    month: selectedPeriod.value
+  })
 
   return {
     // State

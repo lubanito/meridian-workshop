@@ -23,9 +23,15 @@
             {{ t('nav.demandForecast') }}
           </router-link>
           <router-link to="/reports" :class="{ active: $route.path === '/reports' }">
-            Reports
+            {{ t('nav.reports') }}
+          </router-link>
+          <router-link to="/restocking" :class="{ active: $route.path === '/restocking' }">
+            {{ t('nav.restocking') }}
           </router-link>
         </nav>
+        <button class="theme-toggle" @click="toggleTheme" :title="themeToggleLabel" :aria-label="themeToggleLabel" :aria-pressed="isDark">
+          {{ isDark ? '☀️' : '🌙' }}
+        </button>
         <LanguageSwitcher />
         <ProfileMenu
           @show-profile-details="showProfileDetails = true"
@@ -80,11 +86,45 @@ export default {
     const showProfileDetails = ref(false)
     const showTasks = ref(false)
     const apiTasks = ref([])
+    // Snapshot the seed tasks once at setup time. Trade-off (matches the
+    // useAuth.js comment): a locale switch won't re-translate the seed
+    // task titles, BUT user deletes/toggles applied via this ref are
+    // preserved across locale switches. Translating freshly would require
+    // re-seeding from currentUser on every change, which would silently
+    // restore deletes — strictly worse for the buyer's session state.
+    const mockTasks = ref([...(currentUser.value?.tasks ?? [])])
 
-    // Merge mock tasks from currentUser with API tasks
-    const tasks = computed(() => {
-      return [...currentUser.value.tasks, ...apiTasks.value]
-    })
+    // Dark mode — read the effective theme on the document element
+    // (set by index.html's pre-paint script before Vue mounts) so the
+    // toggle icon and aria-pressed match reality on first render. The
+    // ref isn't reactive to manual data-theme changes, but those only
+    // happen via toggleTheme/applyTheme below.
+    const isDark = ref(
+      typeof document !== 'undefined' &&
+      document.documentElement.getAttribute('data-theme') === 'dark'
+    )
+    const themeToggleLabel = computed(() =>
+      isDark.value ? t('theme.switchToLight') : t('theme.switchToDark')
+    )
+
+    const applyTheme = (dark) => {
+      if (dark) {
+        document.documentElement.setAttribute('data-theme', 'dark')
+      } else {
+        document.documentElement.removeAttribute('data-theme')
+      }
+      isDark.value = dark
+    }
+
+    const toggleTheme = () => {
+      const next = !isDark.value
+      // localStorage may throw in sandboxed iframes / private browsing —
+      // never let persistence failure block the theme switch itself.
+      try { localStorage.setItem('theme', next ? 'dark' : 'light') } catch {}
+      applyTheme(next)
+    }
+
+    const tasks = computed(() => [...mockTasks.value, ...apiTasks.value])
 
     const loadTasks = async () => {
       try {
@@ -106,17 +146,9 @@ export default {
 
     const deleteTask = async (taskId) => {
       try {
-        // Check if it's a mock task (from currentUser)
-        const isMockTask = currentUser.value.tasks.some(t => t.id === taskId)
-
-        if (isMockTask) {
-          // Remove from mock tasks
-          const index = currentUser.value.tasks.findIndex(t => t.id === taskId)
-          if (index !== -1) {
-            currentUser.value.tasks.splice(index, 1)
-          }
+        if (mockTasks.value.some(t => t.id === taskId)) {
+          mockTasks.value = mockTasks.value.filter(t => t.id !== taskId)
         } else {
-          // Remove from API tasks
           await api.deleteTask(taskId)
           apiTasks.value = apiTasks.value.filter(t => t.id !== taskId)
         }
@@ -127,18 +159,22 @@ export default {
 
     const toggleTask = async (taskId) => {
       try {
-        // Check if it's a mock task (from currentUser)
-        const mockTask = currentUser.value.tasks.find(t => t.id === taskId)
-
-        if (mockTask) {
-          // Toggle mock task status
-          mockTask.status = mockTask.status === 'pending' ? 'completed' : 'pending'
+        if (mockTasks.value.some(t => t.id === taskId)) {
+          mockTasks.value = mockTasks.value.map(t =>
+            t.id === taskId ? { ...t, status: t.status === 'pending' ? 'completed' : 'pending' } : t
+          )
         } else {
-          // Toggle API task
           const updatedTask = await api.toggleTask(taskId)
           const index = apiTasks.value.findIndex(t => t.id === taskId)
           if (index !== -1) {
-            apiTasks.value[index] = updatedTask
+            // Spread + replace produces a fresh array reference rather than
+            // mutating in place. Vue 3's deep proxy would re-track an
+            // index assignment, but the explicit replacement is more
+            // predictable for any consumer doing identity comparisons or
+            // shallow-watching the ref.
+            const next = [...apiTasks.value]
+            next[index] = updatedTask
+            apiTasks.value = next
           }
         }
       } catch (err) {
@@ -146,7 +182,20 @@ export default {
       }
     }
 
-    onMounted(loadTasks)
+    onMounted(() => {
+      loadTasks()
+      // Theme attribute may already be set by index.html's pre-paint
+      // script; only apply if we still need to (covers the no-storage,
+      // first-visit-with-prefers-dark case the IIFE already handled,
+      // but kept here as a defensive double-check).
+      if (document.documentElement.getAttribute('data-theme') !== 'dark') {
+        let saved = null
+        try { saved = localStorage.getItem('theme') } catch {}
+        if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          applyTheme(true)
+        }
+      }
+    })
 
     return {
       t,
@@ -155,13 +204,64 @@ export default {
       tasks,
       addTask,
       deleteTask,
-      toggleTask
+      toggleTask,
+      isDark,
+      toggleTheme,
+      themeToggleLabel
     }
   }
 }
 </script>
 
 <style>
+:root {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text-heading: #0f172a;
+  --color-text-primary: #1e293b;
+  --color-text-body: #334155;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-bg-subtle: #f1f5f9;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-bg: #eff6ff;
+  --color-danger: #dc2626;
+  --color-danger-bg: #fff7f7;
+  --color-danger-border: #fecaca;
+  --color-warning: #d97706;
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #fcd34d;
+  --color-warning-text: #78350f;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0f172a;
+  --color-surface: #1e293b;
+  --color-text-heading: #f1f5f9;
+  --color-text-primary: #e2e8f0;
+  --color-text-body: #cbd5e1;
+  --color-text-secondary: #94a3b8;
+  /* Lifted from #64748b → #94a3b8 in dark mode for WCAG AA contrast
+     (4.5:1) against --color-surface #1e293b. Light mode keeps #64748b. */
+  --color-text-muted: #94a3b8;
+  --color-border: #334155;
+  --color-bg-subtle: #1e293b;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-bg: #1e3a5f;
+  /* Same shade as light mode — #dc2626 on the dark surface
+     (#1e293b) is ~4.7:1 contrast, clears WCAG AA. */
+  --color-danger: #dc2626;
+  --color-danger-bg: rgba(220, 38, 38, 0.08);
+  --color-danger-border: rgba(220, 38, 38, 0.4);
+  --color-warning: #d97706;
+  --color-warning-bg: rgba(217, 119, 6, 0.15);
+  --color-warning-border: #d97706;
+  --color-warning-text: #fcd34d;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -170,8 +270,8 @@ export default {
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: #f8fafc;
-  color: #1e293b;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -183,8 +283,8 @@ body {
 }
 
 .top-nav {
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
@@ -218,16 +318,16 @@ body {
 .logo h1 {
   font-size: 1.375rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   letter-spacing: -0.025em;
 }
 
 .subtitle {
   font-size: 0.813rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-weight: 400;
   padding-left: 0.75rem;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid var(--color-border);
 }
 
 .nav-tabs {
@@ -237,7 +337,7 @@ body {
 
 .nav-tabs a {
   padding: 0.625rem 1.25rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.938rem;
@@ -247,13 +347,13 @@ body {
 }
 
 .nav-tabs a:hover {
-  color: #0f172a;
-  background: #f1f5f9;
+  color: var(--color-text-heading);
+  background: var(--color-bg-subtle);
 }
 
 .nav-tabs a.active {
-  color: #2563eb;
-  background: #eff6ff;
+  color: var(--color-accent);
+  background: var(--color-accent-bg);
 }
 
 .nav-tabs a.active::after {
@@ -263,7 +363,24 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: #2563eb;
+  background: var(--color-accent);
+}
+
+.theme-toggle {
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.375rem 0.625rem;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-right: 0.75rem;
+  line-height: 1;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--color-bg-subtle);
+  border-color: var(--color-text-secondary);
 }
 
 .main-content {
@@ -281,13 +398,13 @@ body {
 .page-header h2 {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   margin-bottom: 0.375rem;
   letter-spacing: -0.025em;
 }
 
 .page-header p {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.938rem;
 }
 
@@ -299,20 +416,20 @@ body {
 }
 
 .stat-card {
-  background: white;
+  background: var(--color-surface);
   padding: 1.25rem;
   border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   transition: all 0.2s ease;
 }
 
 .stat-card:hover {
-  border-color: #cbd5e1;
+  border-color: var(--color-text-body);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .stat-label {
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -323,7 +440,7 @@ body {
 .stat-value {
   font-size: 2.25rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   letter-spacing: -0.025em;
 }
 
@@ -344,10 +461,10 @@ body {
 }
 
 .card {
-  background: white;
+  background: var(--color-surface);
   border-radius: 10px;
   padding: 1.25rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   margin-bottom: 1.25rem;
 }
 
@@ -357,13 +474,13 @@ body {
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.875rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .card-title {
   font-size: 1.125rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   letter-spacing: -0.025em;
 }
 
@@ -377,16 +494,16 @@ table {
 }
 
 thead {
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 th {
   text-align: left;
   padding: 0.5rem 0.75rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-secondary);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -394,8 +511,8 @@ th {
 
 td {
   padding: 0.5rem 0.75rem;
-  border-top: 1px solid #f1f5f9;
-  color: #334155;
+  border-top: 1px solid var(--color-bg-subtle);
+  color: var(--color-text-body);
   font-size: 0.875rem;
 }
 
@@ -404,7 +521,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: #f8fafc;
+  background: var(--color-bg);
 }
 
 .badge {
@@ -467,10 +584,26 @@ tbody tr:hover {
   color: #1e40af;
 }
 
-.loading {
+/* Dark-mode badge overrides — the pastel light-mode backgrounds
+   wash out against --color-surface #1e293b. Tints + lightened
+   text colours keep the same semantic meaning while clearing
+   WCAG AA contrast on dark surfaces. */
+[data-theme="dark"] .badge.success,
+[data-theme="dark"] .badge.increasing { background: rgba(5, 150, 105, 0.18); color: #6ee7b7; }
+[data-theme="dark"] .badge.warning,
+[data-theme="dark"] .badge.medium { background: rgba(217, 119, 6, 0.18); color: #fcd34d; }
+[data-theme="dark"] .badge.danger,
+[data-theme="dark"] .badge.decreasing,
+[data-theme="dark"] .badge.high { background: rgba(220, 38, 38, 0.18); color: #fca5a5; }
+[data-theme="dark"] .badge.info,
+[data-theme="dark"] .badge.low { background: rgba(37, 99, 235, 0.18); color: #93c5fd; }
+[data-theme="dark"] .badge.stable { background: rgba(99, 102, 241, 0.18); color: #c7d2fe; }
+
+.loading,
+.empty-state {
   text-align: center;
   padding: 3rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   font-size: 0.938rem;
 }
 
@@ -482,5 +615,15 @@ tbody tr:hover {
   border-radius: 8px;
   margin: 1rem 0;
   font-size: 0.938rem;
+}
+
+/* Dark-mode override for the global .error banner — the pastel pink
+   light-mode palette has poor contrast against --color-surface #1e293b
+   and looks visually broken next to the rest of the dark UI. Mirrors the
+   PurchaseOrderModal's [data-theme="dark"] .error-state pattern. */
+[data-theme="dark"] .error {
+  background: rgba(220, 38, 38, 0.12);
+  border-color: rgba(220, 38, 38, 0.4);
+  color: #fca5a5;
 }
 </style>

@@ -1,0 +1,752 @@
+<template>
+  <div class="view-container">
+    <div class="page-header">
+      <h2>{{ t('restocking.title') }}</h2>
+      <p>{{ t('restocking.description') }}</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card danger">
+        <div class="stat-label">{{ t('restocking.belowReorderPoint') }}</div>
+        <div class="stat-value">{{ belowReorderCount }}</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-label">{{ t('restocking.increasingDemand') }}</div>
+        <div class="stat-value">{{ increasingDemandCount }}</div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-label">{{ t('restocking.totalCandidates') }}</div>
+        <div class="stat-value">{{ sortedRecommendations.length }}</div>
+      </div>
+      <div class="stat-card" :class="isOverBudget ? 'danger' : 'success'">
+        <div class="stat-label">{{ t('restocking.budgetUtilization') }}</div>
+        <div class="stat-value">{{ budgetPercent }}%</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">{{ t('restocking.budgetCeiling') }}</span>
+      </div>
+      <div class="budget-input-row">
+        <label for="budget-input" class="budget-label">{{ t('restocking.budgetLabel') }}</label>
+        <input
+          id="budget-input"
+          v-model.number="budgetCeiling"
+          type="number"
+          min="0"
+          max="1000000000"
+          step="1000"
+          class="budget-input"
+          @blur="normalizeBudget"
+        />
+      </div>
+    </div>
+
+    <div v-if="loading" class="loading">{{ t('common.loading') }}</div>
+    <div v-else-if="error" class="error">{{ error }}</div>
+    <div v-else-if="sortedRecommendations.length === 0" class="empty-state">
+      {{ t('restocking.noRecommendations') }}
+    </div>
+    <template v-else>
+      <div class="card-note">{{ t('restocking.filterScopeNote') }}</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">{{ t('restocking.table.title') }}</span>
+          <span class="result-count">{{ sortedRecommendations.length }} {{ t('restocking.items') }}</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ t('restocking.table.priority') }}</th>
+                <th>{{ t('inventory.table.sku') }}</th>
+                <th>{{ t('restocking.table.name') }}</th>
+                <th>{{ t('restocking.table.category') }}</th>
+                <th>{{ t('inventory.table.warehouse') }}</th>
+                <th>{{ t('restocking.table.onHand') }}</th>
+                <th>{{ t('restocking.table.reorderPoint') }}</th>
+                <th>{{ t('restocking.table.demandForecast') }}</th>
+                <th>{{ t('restocking.table.qtyToOrder') }}</th>
+                <th>{{ t('restocking.table.unitCost') }}</th>
+                <th>{{ t('restocking.table.estCost') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="item in sortedRecommendations"
+                :key="item.rowKey"
+                :class="{ 'row-over-budget': overBudgetSkus.has(item.rowKey) }"
+              >
+                <td>
+                  <span class="badge" :class="item.priority.toLowerCase()">
+                    {{ t(`priority.${item.priority.toLowerCase()}`) }}
+                  </span>
+                </td>
+                <td class="sku-cell">{{ item.sku }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ translateCategory(item.category) }}</td>
+                <td>{{ translateWarehouse(item.warehouse) }}</td>
+                <td :class="{ 'text-danger': item.quantity_on_hand <= item.reorder_point }">
+                  {{ formatNumber(item.quantity_on_hand) }}
+                </td>
+                <td>{{ formatNumber(item.reorder_point) }}</td>
+                <td>
+                  <span v-if="item.forecasted_demand !== null">{{ formatNumber(item.forecasted_demand) }}</span>
+                  <span v-else class="text-muted">—</span>
+                </td>
+                <td>
+                  <input
+                    :value="editedQtys[item.rowKey]"
+                    type="number"
+                    min="0"
+                    class="qty-input"
+                    :aria-label="`${t('restocking.table.qtyToOrder')} — ${item.sku}`"
+                    @input="updateQty(item.rowKey, $event.target.value)"
+                    @blur="normalizeQty(item.rowKey, $event.target.value)"
+                  />
+                </td>
+                <td>{{ formatCurrency(item.unit_cost) }}</td>
+                <td>
+                  <span class="est-cost">{{ formatCurrency((editedQtys[item.rowKey] ?? 0) * item.unit_cost) }}</span>
+                  <span v-if="overBudgetSkus.has(item.rowKey)" class="badge danger over-budget-badge">{{ t('restocking.overBudget') }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card budget-summary-card">
+        <div class="budget-summary-header">
+          <span class="budget-summary-text">
+            {{ t('restocking.summary.totalSelected') }}
+            <strong>{{ formatCurrency(totalSelected) }}</strong>
+            {{ t('restocking.summary.of') }}
+            <strong>{{ formatCurrency(budgetCeiling) }}</strong>
+            {{ t('restocking.summary.budget') }} ({{ budgetPercent }}%)
+          </span>
+          <span v-if="isOverBudget" class="badge danger">{{ t('restocking.summary.overBudget') }}</span>
+        </div>
+        <div v-if="isOverBudget" class="within-budget-hint">
+          {{ t('restocking.summary.withinBudgetHint', { amount: formatCurrency(totalWithinBudget) }) }}
+        </div>
+        <div class="progress-bar-track">
+          <div
+            class="progress-bar-fill"
+            :class="{ 'progress-over': isOverBudget }"
+            :style="{ width: progressBarWidth + '%' }"
+          ></div>
+        </div>
+      </div>
+
+      <div class="actions-row">
+        <button class="btn-primary" @click="previewDraftPOs">
+          {{ t('restocking.previewDraft') }}
+        </button>
+        <span class="draft-hint">{{ t('restocking.draftHint') }}</span>
+      </div>
+
+      <div v-if="emptySelectionNotice" class="empty-selection-notice" role="status" aria-live="polite">
+        {{ t('restocking.noItemsSelected') }}
+      </div>
+
+      <div v-if="successMessage" ref="successAlertRef" class="success-alert">
+        <strong>{{ t('restocking.successMessage') }}</strong>
+        <ul>
+          <li v-for="item in confirmedItems" :key="item.rowKey">
+            {{ item.sku }} — {{ item.name }}: {{ formatNumber(item.qty_to_order) }} {{ t('purchaseOrder.units') }} @ {{ formatCurrency(item.unit_cost) }} = {{ formatCurrency(item.qty_to_order * item.unit_cost) }}
+          </li>
+        </ul>
+        <div class="success-total">
+          {{ t('restocking.summary.total') }} <strong>{{ formatCurrency(confirmedTotal) }}</strong>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>
+
+<script>
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
+import { useFilters } from '../composables/useFilters'
+import { useI18n } from '../composables/useI18n'
+import { api } from '../api'
+
+// Default budget ceiling shown the first time a user opens the page; the
+// input is editable so this is just an opinionated starting point.
+const DEFAULT_BUDGET = 50_000
+
+export default {
+  name: 'Restocking',
+  setup() {
+    const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
+    const { t, formatCurrency, formatNumber, currencyPrecision, translateCategory, translateWarehouse } = useI18n()
+
+    // Per-currency multiplier for line-cost rounding. The budget walk and
+    // totalSelected sum many `qty * unit_cost` products as raw floats,
+    // and a single 0.1 + 0.2 style drift on a borderline pick can flip
+    // it over/under budget across reloads even when the data hasn't
+    // changed. Snapping each line to the currency grid (USD: 2dp, JPY:
+    // 0dp, KWD: 3dp) before summing kills that drift cheaply, without
+    // waiting on the FIXME(money) Decimal migration on the server.
+    // currencyPrecision is the Intl-derived fraction-digits getter on
+    // useI18n — same source of truth as PurchaseOrderModal's unit-cost
+    // step/min, so the two can't drift on a locale change.
+    const lineMultiplier = computed(() => Math.pow(10, currencyPrecision.value))
+    const roundLine = (n) => Math.round(n * lineMultiplier.value) / lineMultiplier.value
+
+    const inventory = ref([])
+    const demandForecasts = ref([])
+    const loading = ref(true)
+    const error = ref(null)
+    const budgetCeiling = ref(DEFAULT_BUDGET)
+
+    // Normalize on blur (commit time) — eager mid-edit normalization
+    // would snap the input back to 0 the instant a user clears the
+    // field to retype, which is jarring. Downstream computeds use
+    // `!(value > 0)` guards so they treat NaN/negatives as "no budget"
+    // until blur fires. Also clamp to the same ceiling the input's
+    // `max` enforces, so a paste/keyboard-arrow that bypasses the
+    // browser's max can't make budgetPercent rendering meaningless.
+    const BUDGET_MAX = 1_000_000_000
+    const normalizeBudget = () => {
+      if (!(budgetCeiling.value > 0)) {
+        budgetCeiling.value = 0
+      } else if (budgetCeiling.value > BUDGET_MAX) {
+        budgetCeiling.value = BUDGET_MAX
+      }
+    }
+    const successMessage = ref(false)
+    const emptySelectionNotice = ref(false)
+    let emptyNoticeTimer = null
+    const confirmedItems = ref([])
+    const confirmedTotal = ref(0)
+    const successAlertRef = ref(null)
+    const editedQtys = ref({})
+
+    // Monotonic request id — a slow earlier fetch resolving after a faster
+    // later one would otherwise overwrite the user's current filter result.
+    let loadId = 0
+
+    const loadData = async () => {
+      const currentId = ++loadId
+      loading.value = true
+      error.value = null
+      successMessage.value = false
+      try {
+        const filters = getCurrentFilters()
+        // Demand forecasts are global (per-SKU, not per-warehouse), so we
+        // skip the filter pass-through. The inventory filter narrows which
+        // SKUs end up in `recommendations`; the demand map is keyed by SKU
+        // and only the relevant entries are read downstream.
+        const [invData, demandData] = await Promise.all([
+          api.getInventory(filters),
+          api.getDemandForecasts()
+        ])
+        if (currentId !== loadId) return
+        inventory.value = invData
+        demandForecasts.value = demandData
+      } catch {
+        if (currentId !== loadId) return
+        error.value = t('common.errorLoadingData')
+      } finally {
+        if (currentId === loadId) loading.value = false
+      }
+    }
+
+    const demandMap = computed(() => {
+      const map = {}
+      for (const d of demandForecasts.value) {
+        map[d.item_sku] = d
+      }
+      return map
+    })
+
+    const recommendations = computed(() => {
+      const results = []
+      for (const item of inventory.value) {
+        const demand = demandMap.value[item.sku] || null
+        const isBelowReorder = item.quantity_on_hand <= item.reorder_point
+        const isIncreasing = demand && demand.trend === 'increasing'
+
+        if (!isBelowReorder && !isIncreasing) continue
+
+        // After the guard above, at least one signal is true — only High and
+        // Medium are reachable. Items not flagged on either signal are skipped.
+        const priority = isBelowReorder && isIncreasing ? 'High' : 'Medium'
+
+        // Heuristic: target stock = 2× reorder point. Doubling provides a
+        // simple safety margin above the trip-point so the next reorder
+        // isn't immediately due. If forecasted demand is higher, override
+        // to cover that instead — never order less than what's predicted.
+        let recommended_qty = Math.max(item.reorder_point * 2 - item.quantity_on_hand, 0)
+        if (demand && demand.forecasted_demand > item.quantity_on_hand) {
+          recommended_qty = Math.max(recommended_qty, demand.forecasted_demand - item.quantity_on_hand)
+        }
+
+        results.push({
+          // Compound key — same SKU can exist in multiple warehouses, so
+          // keying by sku alone would collide and Vue would dedupe rows
+          // (a qty edit on one warehouse would silently apply to both).
+          rowKey: `${item.warehouse}|${item.sku}`,
+          sku: item.sku,
+          name: item.name,
+          category: item.category,
+          warehouse: item.warehouse,
+          quantity_on_hand: item.quantity_on_hand,
+          reorder_point: item.reorder_point,
+          unit_cost: item.unit_cost,
+          forecasted_demand: demand ? demand.forecasted_demand : null,
+          recommended_qty,
+          priority
+        })
+      }
+      return results
+    })
+
+    // Coerce + floor at 0 + truncate to whole units in one place rather
+    // than inline in the template, so the rule is grep-able and
+    // unit-testable. POs are placed in whole units; fractional qty
+    // would also confuse the unit_cost × qty multiplication downstream.
+    // Keyed by rowKey (warehouse|sku) — see the recommendations builder
+    // for why a bare SKU isn't unique.
+    const updateQty = (rowKey, raw) => {
+      // While the user is mid-typing leave the displayed value alone if
+      // they cleared the field (raw === ''), otherwise the input snaps to
+      // 0 between keystrokes and the cursor jumps. Normalise to 0 on @blur.
+      // Trade-off: editedQtys[rowKey] is briefly stale (still the previous
+      // value) while raw === ''. previewDraftPOs would read that stale
+      // value if invoked between the keystroke and @blur — unreachable in
+      // practice because clicking Generate forces blur first, but worth
+      // the note for any future programmatic caller.
+      if (raw === '') return
+      editedQtys.value[rowKey] = Math.max(0, Math.floor(Number(raw) || 0))
+      // Mark this as a user-driven edit so the success-banner clear
+      // watcher (further down) only fires for real edits, not for the
+      // recommendations-watch reseeding qtys after a filter change.
+      successMessage.value = false
+    }
+
+    // Commit-time normaliser: if the user leaves the field empty or
+    // typed something that coerced to NaN/negative, snap back to 0 so
+    // downstream computeds don't see undefined.
+    const normalizeQty = (rowKey, raw) => {
+      const n = Number(raw)
+      if (raw === '' || Number.isNaN(n) || n < 0) {
+        editedQtys.value[rowKey] = 0
+        successMessage.value = false
+      }
+    }
+
+    // Keep editedQtys in sync with recommendations. If the user has
+    // already edited a qty for a row still present after the new fetch
+    // (recommendations narrows but the row survives), preserve the edit.
+    // Caveat: edits do NOT survive a filter that excludes the row and is
+    // then reverted — the intermediate fetch drops the rowKey from
+    // `next`, so the re-include reseeds from the recommendation default.
+    // Persisting edits across exclude/re-include cycles would need a
+    // separate "ever-seen" map; deliberately not added — the behavior
+    // matches the buyer's likely mental model (filter excludes a row →
+    // it's gone) and avoids an unbounded session-scoped map.
+    watch(recommendations, (newRecs) => {
+      const next = {}
+      for (const item of newRecs) {
+        next[item.rowKey] = editedQtys.value[item.rowKey] ?? item.recommended_qty
+      }
+      editedQtys.value = next
+    }, { immediate: true })
+
+    const sortedRecommendations = computed(() => {
+      // recommendations only ever assigns High or Medium (the !isBelowReorder
+      // && !isIncreasing case is filtered out earlier), so Low is unused here.
+      // Sort is intentionally cost-independent so the row a buyer is
+      // typing into can't move while they edit. Cost is rendered as a
+      // read-only column for context.
+      // Low is unreachable today (recommendations filters before assigning)
+      // but kept here so a future code path adding 'Low' doesn't return
+      // NaN from the comparator and trigger implementation-defined sort.
+      const priorityOrder = { High: 0, Medium: 1, Low: 2 }
+      // numeric:true so SKU-2 sorts before SKU-10 (natural order),
+      // not after as plain lexicographic compare would have it.
+      const skuCollator = new Intl.Collator(undefined, { numeric: true })
+      return [...recommendations.value].sort((a, b) => {
+        const pDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
+        if (pDiff !== 0) return pDiff
+        return skuCollator.compare(a.sku, b.sku)
+      })
+    })
+
+    const belowReorderCount = computed(() =>
+      inventory.value.filter(i => i.quantity_on_hand <= i.reorder_point).length
+    )
+
+    const increasingDemandCount = computed(() => {
+      const skusWithIncreasing = new Set(
+        demandForecasts.value.filter(d => d.trend === 'increasing').map(d => d.item_sku)
+      )
+      return inventory.value.filter(i => skusWithIncreasing.has(i.sku)).length
+    })
+
+    // Total of every line the buyer has requested (qty > 0), including
+    // over-budget rows. The "Over budget" per-row badge is informational —
+    // it does not auto-exclude the row from the draft, so this number
+    // intentionally matches what previewDraftPOs would submit.
+    // Walks sortedRecommendations so it iterates the same list overBudgetSkus
+    // walks, keeping the budget bar and per-row badges consistent.
+    const totalSelected = computed(() =>
+      sortedRecommendations.value.reduce((sum, item) => {
+        const qty = editedQtys.value[item.rowKey] ?? 0
+        return sum + roundLine(qty * item.unit_cost)
+      }, 0)
+    )
+
+    const budgetPercent = computed(() => {
+      // Use !(> 0) to handle NaN from partially-typed negative input
+      if (!(budgetCeiling.value > 0)) return 0
+      return Math.round((totalSelected.value / budgetCeiling.value) * 100)
+    })
+
+    const isOverBudget = computed(() =>
+      // Guard NaN/<=0 directly so we don't depend on a watcher resetting
+      // the input — a mid-edit empty/negative value just shows "no budget"
+      // rather than incorrectly flagging the cart as over-budget.
+      budgetCeiling.value > 0 && totalSelected.value > budgetCeiling.value
+    )
+
+    const progressBarWidth = computed(() => Math.min(budgetPercent.value, 100))
+
+    // Walk recommendations top-to-bottom; flag any SKU whose cost would push
+    // the cumulative total over the ceiling. Skips zero-quantity rows so the
+    // running total only advances on real picks.
+    //
+    // This is intentionally NOT a knapsack/bin-packing optimiser — a large
+    // High-priority row that doesn't fit will leave room for smaller
+    // following items, which can look like wasted budget. The buyer
+    // controls the trade-off by editing qty (or zeroing out the oversized
+    // row). totalWithinBudget reflects the sum that *currently* fits given
+    // the user's picks, not a packing-optimal value.
+    const overBudgetSkus = computed(() => {
+      if (budgetCeiling.value <= 0) return new Set()
+      const flagged = new Set()
+      let running = 0
+      for (const rec of sortedRecommendations.value) {
+        const qty = editedQtys.value[rec.rowKey] ?? 0
+        const cost = roundLine(qty * rec.unit_cost)
+        if (cost <= 0) continue
+        if (running + cost > budgetCeiling.value) {
+          flagged.add(rec.rowKey)
+        } else {
+          running += cost
+        }
+      }
+      return flagged
+    })
+
+    // Sum excluding rows the over-budget walk has flagged — i.e. what would
+    // fit within the ceiling. Defined after overBudgetSkus so the dependency
+    // reads top-to-bottom for a future maintainer.
+    const totalWithinBudget = computed(() =>
+      sortedRecommendations.value.reduce((sum, item) => {
+        if (overBudgetSkus.value.has(item.rowKey)) return sum
+        const qty = editedQtys.value[item.rowKey] ?? 0
+        return sum + roundLine(qty * item.unit_cost)
+      }, 0)
+    )
+
+    // Draft-only preview: the button labelled "Preview Draft" assembles a
+    // local summary so a buyer can review picks against the budget. Real
+    // submission would post each line to POST /api/purchase-orders, but that
+    // endpoint expects a backlog_item_id and these recommendations come from
+    // inventory + demand, not the backlog — so we keep this in-memory and
+    // surface a "not yet submitted" banner.
+    const previewDraftPOs = async () => {
+      // The recommendations watcher seeds every rowKey with a number on
+      // every fetch, and updateQty coerces typed input through Math.max
+      // + Math.floor + Number(...) || 0, so editedQtys[rowKey] is always
+      // a finite non-negative integer for any row in sortedRecommendations.
+      // The only stale-window is the brief empty-input mid-typing case
+      // documented on updateQty, and a real click forces @blur first.
+      // Walk sortedRecommendations so the draft summary matches the table
+      // order the buyer is looking at, not the raw inventory order.
+      const selected = sortedRecommendations.value.filter(i => (editedQtys.value[i.rowKey] ?? 0) > 0)
+      if (selected.length === 0) {
+        // Surface a transient inline notice instead of a silent no-op so
+        // a user who's zeroed everything out gets feedback. Track the
+        // timer so we can clear it on unmount and avoid a write on a
+        // destroyed component.
+        emptySelectionNotice.value = true
+        successMessage.value = false
+        await nextTick()
+        if (emptyNoticeTimer) clearTimeout(emptyNoticeTimer)
+        emptyNoticeTimer = setTimeout(() => {
+          emptySelectionNotice.value = false
+          emptyNoticeTimer = null
+        }, 3500)
+        return
+      }
+      if (emptyNoticeTimer) {
+        clearTimeout(emptyNoticeTimer)
+        emptyNoticeTimer = null
+      }
+      emptySelectionNotice.value = false
+      confirmedItems.value = selected.map(i => ({
+        ...i,
+        qty_to_order: editedQtys.value[i.rowKey] ?? 0
+      }))
+      confirmedTotal.value = selected.reduce((sum, i) => sum + roundLine((editedQtys.value[i.rowKey] ?? 0) * i.unit_cost), 0)
+      successMessage.value = true
+      await nextTick()
+      successAlertRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+
+    // FilterBar is mounted globally in App.vue; selectedLocation/selectedCategory
+    // are module-level refs shared with every component that calls useFilters().
+    watch([selectedLocation, selectedCategory], loadData, { immediate: true })
+
+    // Clear the draft preview banner only when the budget ceiling
+    // changes — qty edits are handled in updateQty/normalizeQty so we
+    // don't conflate user-driven edits with the recommendations watcher
+    // reseeding editedQtys on a filter change (which would otherwise
+    // clear the banner unexpectedly).
+    watch(budgetCeiling, () => { successMessage.value = false })
+
+    onUnmounted(() => {
+      if (emptyNoticeTimer) clearTimeout(emptyNoticeTimer)
+    })
+
+    return {
+      t,
+      formatCurrency,
+      formatNumber,
+      translateCategory,
+      translateWarehouse,
+      loading,
+      error,
+      budgetCeiling,
+      normalizeBudget,
+      editedQtys,
+      updateQty,
+      normalizeQty,
+      sortedRecommendations,
+      belowReorderCount,
+      increasingDemandCount,
+      totalSelected,
+      totalWithinBudget,
+      budgetPercent,
+      isOverBudget,
+      progressBarWidth,
+      overBudgetSkus,
+      previewDraftPOs,
+      successMessage,
+      emptySelectionNotice,
+      successAlertRef,
+      confirmedItems,
+      confirmedTotal
+    }
+  }
+}
+</script>
+
+<style scoped>
+.view-container {
+  padding: 2rem;
+}
+
+.budget-input-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.budget-label {
+  font-size: 0.938rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.budget-input {
+  width: 200px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.938rem;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+.budget-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.result-count {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.sku-cell {
+  font-family: 'Courier New', monospace;
+  font-size: 0.813rem;
+  color: var(--color-text-secondary);
+}
+
+.text-danger {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.qty-input {
+  width: 80px;
+  padding: 0.375rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.875rem;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  text-align: right;
+}
+
+.qty-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.est-cost {
+  font-weight: 600;
+  color: var(--color-text-heading);
+}
+
+.over-budget-badge {
+  margin-left: 0.5rem;
+  font-size: 0.688rem;
+}
+
+.row-over-budget,
+/* :hover sibling: the global tbody tr:hover would otherwise replace
+   --color-danger-bg with --color-bg-subtle when the user mouses over
+   a flagged row — exactly when they're most likely looking at it. */
+.row-over-budget:hover {
+  background: var(--color-danger-bg);
+}
+
+.budget-summary-card {
+  margin-top: 0;
+}
+
+.budget-summary-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.budget-summary-text {
+  font-size: 0.938rem;
+  color: var(--color-text-body);
+}
+
+.within-budget-hint {
+  font-size: 0.813rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.progress-bar-track {
+  height: 10px;
+  background: var(--color-bg-subtle);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 99px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.progress-bar-fill.progress-over {
+  background: var(--color-danger);
+}
+
+.actions-row {
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.draft-hint {
+  font-size: 0.813rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.card-note {
+  font-size: 0.813rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-bg-subtle);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-accent);
+}
+
+.empty-selection-notice {
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  color: var(--color-text-body);
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+
+.btn-primary {
+  padding: 0.625rem 1.5rem;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.938rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-hover);
+}
+
+/* Draft-state alert (amber, not green) — the action is a preview, not a real submission */
+.success-alert {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-left: 4px solid var(--color-warning);
+  color: var(--color-warning-text);
+  padding: 1.25rem 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.success-alert ul {
+  margin: 0.75rem 0 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.8;
+}
+
+.success-total {
+  font-size: 0.938rem;
+  margin-top: 0.5rem;
+}
+</style>

@@ -6,6 +6,8 @@ export default {
     orders: 'Orders',
     finance: 'Finance',
     demandForecast: 'Demand Forecast',
+    reports: 'Reports',
+    restocking: 'Restocking',
     companyName: 'Catalyst Components',
     subtitle: 'Inventory Management System'
   },
@@ -22,7 +24,9 @@ export default {
       revenueYTD: 'Revenue (Orders) YTD',
       revenueMTD: 'Revenue (Orders) MTD',
       avgProcessingTime: 'Avg Processing Time (Days)',
-      goal: 'Goal'
+      goal: 'Goal',
+      staticTag: 'YTD',
+      staticHint: 'Static year-to-date snapshot — does not respond to filters'
     },
     summary: {
       title: 'Summary'
@@ -55,7 +59,10 @@ export default {
       daysDelayed: 'Days Delayed',
       priority: 'Priority',
       unitsShort: 'units short',
-      days: 'days'
+      days: 'days',
+      actions: 'Actions',
+      createPO: 'Create PO',
+      viewPO: 'View PO'
     },
     topProducts: {
       title: 'Top Products by Revenue',
@@ -188,6 +195,75 @@ export default {
     }
   },
 
+  // Reports
+  reports: {
+    title: 'Performance Reports',
+    description: 'View quarterly performance metrics and monthly trends',
+    quarterlyPerformance: 'Quarterly Performance',
+    quarterlyMonthFilterNote: 'Quarterly view is not narrowed by single-month filters — it always covers full quarters.',
+    monthlyTrend: 'Monthly Revenue Trend',
+    monthOverMonth: 'Monthly Trend Analysis',
+    table: {
+      quarter: 'Quarter',
+      totalOrders: 'Total Orders',
+      totalRevenue: 'Total Revenue',
+      avgOrderValue: 'Avg Order Value',
+      fulfillmentRate: 'Fulfillment Rate',
+      month: 'Month',
+      orders: 'Orders',
+      revenue: 'Revenue',
+      change: 'Change',
+      growthRate: 'Growth Rate'
+    },
+    stats: {
+      totalRevenue: 'Total Revenue (YTD)',
+      avgMonthlyRevenue: 'Avg Monthly Revenue',
+      totalOrders: 'Total Orders (YTD)',
+      bestQuarter: 'Best Performing Quarter'
+    }
+  },
+
+  // Restocking
+  restocking: {
+    title: 'Restocking Recommendations',
+    description: 'Purchase order recommendations based on current stock levels and demand forecasts.',
+    belowReorderPoint: 'Below Reorder Point',
+    increasingDemand: 'Increasing Demand',
+    totalCandidates: 'Total Candidates',
+    budgetUtilization: 'Budget Utilization',
+    budgetCeiling: 'Budget Ceiling',
+    budgetLabel: 'Budget ceiling',
+    items: 'items',
+    overBudget: 'Over budget',
+    table: {
+      title: 'Recommended Purchase Orders',
+      priority: 'Priority',
+      name: 'Name',
+      category: 'Category',
+      onHand: 'On Hand',
+      reorderPoint: 'Reorder Point',
+      demandForecast: 'Demand Forecast',
+      qtyToOrder: 'Qty to Order',
+      unitCost: 'Unit Cost',
+      estCost: 'Est. Cost'
+    },
+    summary: {
+      totalSelected: 'Total selected:',
+      of: 'of',
+      budget: 'budget',
+      overBudget: 'Over Budget',
+      withinBudget: 'Within Budget',
+      withinBudgetHint: 'Within budget: {amount} (excludes flagged rows)',
+      total: 'Total:'
+    },
+    previewDraft: 'Preview Draft',
+    draftHint: 'Builds an in-app preview only — no orders are submitted to suppliers.',
+    noItemsSelected: 'Set a quantity above zero on at least one row to preview a draft.',
+    noRecommendations: 'No restocking recommendations — every SKU is at or above its reorder point and demand is steady.',
+    filterScopeNote: 'Recommendations are scoped by Location and Category. The Time Period and Order Status filters do not apply on this page.',
+    successMessage: 'Draft purchase orders ready for review — not yet submitted.'
+  },
+
   // Filters
   filters: {
     timePeriod: 'Time Period',
@@ -195,7 +271,8 @@ export default {
     category: 'Category',
     orderStatus: 'Order Status',
     all: 'All',
-    allMonths: 'All Months'
+    allMonths: 'All Months',
+    resetAll: 'Reset all filters'
   },
 
   // Statuses
@@ -248,6 +325,10 @@ export default {
   },
 
   // Months
+  // Note: 'may' has only one entry — it serves as both the short and the
+  // long form because "May" is identical in either case. There is no
+  // "may: 'May'" duplicate further down on purpose; t('months.may') in
+  // FilterBar.vue resolves through the single key.
   months: {
     jan: 'Jan',
     feb: 'Feb',
@@ -311,10 +392,17 @@ export default {
     selectLanguage: 'Select Language'
   },
 
+  // Theme toggle
+  theme: {
+    switchToLight: 'Switch to light mode',
+    switchToDark: 'Switch to dark mode'
+  },
+
   // Common
   common: {
     loading: 'Loading...',
     error: 'Error',
+    errorLoadingData: 'Failed to load data. Please try again.',
     noData: 'No data available',
     viewDetails: 'View Details',
     close: 'Close',
@@ -324,5 +412,33 @@ export default {
     filter: 'Filter',
     export: 'Export',
     items: 'items'
+  },
+
+  // Purchase Order Modal
+  purchaseOrder: {
+    createTitle: 'Create Purchase Order',
+    viewTitle: 'Purchase Order Details',
+    shortage: 'Shortage',
+    units: 'units',
+    supplierName: 'Supplier Name',
+    supplierPlaceholder: 'Enter supplier name',
+    quantity: 'Quantity',
+    unitCost: 'Unit Cost',
+    unitCostHint: 'Minimum {min}',
+    expectedDelivery: 'Expected Delivery Date',
+    notes: 'Notes (optional)',
+    notesPlaceholder: 'Additional notes...',
+    loading: 'Loading purchase order...',
+    loadError: 'Could not load purchase order details.',
+    notCreated: 'No purchase order has been created for this backlog item yet.',
+    poId: 'PO ID',
+    supplier: 'Supplier',
+    totalCost: 'Total Cost',
+    status: 'Status',
+    created: 'Created',
+    notesLabel: 'Notes',
+    creating: 'Creating...',
+    createOrder: 'Create Order',
+    failed: 'Failed to create purchase order.'
   }
 }

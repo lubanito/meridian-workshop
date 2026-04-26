@@ -11,56 +11,58 @@
       <div class="kpi-section">
         <h3 class="section-title">{{ t('dashboard.kpi.title') }}</h3>
         <div class="kpi-grid">
-          <div class="kpi-card">
+          <div class="kpi-card kpi-card--warning">
             <div class="kpi-header">
               <span class="kpi-label">{{ t('dashboard.kpi.inventoryTurnover') }}</span>
             </div>
             <div class="kpi-value">4.2</div>
-            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: 4.5 (-6.67%)</div>
+            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: 4.5 <span class="kpi-delta kpi-delta--warning">(-6.67%)</span></div>
             <div class="kpi-progress-bar">
-              <div class="kpi-progress" style="width: 93.33%"></div>
+              <div class="kpi-progress kpi-progress--warning" style="width: 93.33%"></div>
             </div>
           </div>
 
-          <div class="kpi-card">
+          <div :class="['kpi-card', calculatePercentage(ordersData.fulfilled, ordersData.goal) >= 100 ? 'kpi-card--positive' : 'kpi-card--warning']">
             <div class="kpi-header">
               <span class="kpi-label">{{ t('dashboard.kpi.ordersFulfilled') }}</span>
+              <span class="kpi-static-tag" :title="t('dashboard.kpi.staticHint')">{{ t('dashboard.kpi.staticTag') }}</span>
             </div>
             <div class="kpi-value">{{ ordersData.fulfilled }}</div>
-            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: {{ ordersData.goal }} ({{ calculatePercentage(ordersData.fulfilled, ordersData.goal) }}%)</div>
+            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: {{ ordersData.goal }} <span :class="['kpi-delta', calculatePercentage(ordersData.fulfilled, ordersData.goal) >= 100 ? 'kpi-delta--positive' : 'kpi-delta--warning']">({{ calculatePercentage(ordersData.fulfilled, ordersData.goal) }}%)</span></div>
             <div class="kpi-progress-bar">
-              <div class="kpi-progress" :style="{ width: calculatePercentage(ordersData.fulfilled, ordersData.goal) + '%' }"></div>
+              <div :class="['kpi-progress', calculatePercentage(ordersData.fulfilled, ordersData.goal) >= 100 ? 'success' : 'kpi-progress--warning']" :style="{ width: clampedPercent(ordersData.fulfilled, ordersData.goal) + '%' }"></div>
             </div>
           </div>
 
-          <div class="kpi-card">
+          <div :class="['kpi-card', fillRate >= 95 ? 'kpi-card--positive' : 'kpi-card--warning']">
             <div class="kpi-header">
               <span class="kpi-label">{{ t('dashboard.kpi.orderFillRate') }}</span>
+              <span class="kpi-static-tag" :title="t('dashboard.kpi.staticHint')">{{ t('dashboard.kpi.staticTag') }}</span>
             </div>
             <div class="kpi-value">{{ fillRate }}%</div>
-            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: 95% ({{ fillRate - 95 > 0 ? '+' : '' }}{{ (fillRate - 95).toFixed(2) }}%)</div>
+            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: 95% <span :class="['kpi-delta', fillRate >= 95 ? 'kpi-delta--positive' : 'kpi-delta--warning']">({{ fillRate - 95 > 0 ? '+' : '' }}{{ (fillRate - 95).toFixed(2) }}%)</span></div>
             <div class="kpi-progress-bar">
               <div class="kpi-progress success" :style="{ width: (fillRate / 95 * 100) + '%' }"></div>
             </div>
           </div>
 
-          <div class="kpi-card">
+          <div :class="['kpi-card', summary.total_orders_value >= revenueGoal ? 'kpi-card--positive' : 'kpi-card--warning']">
             <div class="kpi-header">
               <span class="kpi-label">{{ t(selectedPeriod === 'all' ? 'dashboard.kpi.revenueYTD' : 'dashboard.kpi.revenueMTD') }}</span>
             </div>
-            <div class="kpi-value">{{ formatCurrency(Math.round(summary.total_orders_value), selectedCurrency) }}</div>
-            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: {{ formatCurrency(revenueGoal, selectedCurrency) }} ({{ summary.total_orders_value > revenueGoal ? '+' : '' }}{{ ((summary.total_orders_value / revenueGoal - 1) * 100).toFixed(1) }}%)</div>
+            <div class="kpi-value">{{ formatCurrency(summary.total_orders_value) }}</div>
+            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: {{ formatCurrency(revenueGoal) }} <span :class="['kpi-delta', summary.total_orders_value >= revenueGoal ? 'kpi-delta--positive' : 'kpi-delta--warning']">({{ summary.total_orders_value > revenueGoal ? '+' : '' }}{{ ((summary.total_orders_value / revenueGoal - 1) * 100).toFixed(1) }}%)</span></div>
             <div class="kpi-progress-bar">
-              <div class="kpi-progress" :style="{ width: Math.min((summary.total_orders_value / revenueGoal * 100), 100) + '%' }"></div>
+              <div :class="['kpi-progress', summary.total_orders_value >= revenueGoal ? 'success' : '']" :style="{ width: revenueProgressPercent + '%' }"></div>
             </div>
           </div>
 
-          <div class="kpi-card">
+          <div class="kpi-card kpi-card--positive">
             <div class="kpi-header">
               <span class="kpi-label">{{ t('dashboard.kpi.avgProcessingTime') }}</span>
             </div>
             <div class="kpi-value">2.8</div>
-            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: 3.0 (-6.67%)</div>
+            <div class="kpi-goal">{{ t('dashboard.kpi.goal') }}: 3.0 <span class="kpi-delta kpi-delta--positive">(-6.67%)</span></div>
             <div class="kpi-progress-bar">
               <div class="kpi-progress success" style="width: 93.33%"></div>
             </div>
@@ -87,18 +89,18 @@
                 <svg viewBox="0 0 200 200" class="donut-svg-compact">
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#e2e8f0" stroke-width="25"/>
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#10b981" stroke-width="25"
-                    :stroke-dasharray="`${getCircleSegment(statusData.delivered)} 408`"
+                    :stroke-dasharray="`${getCircleSegment(statusData.delivered)} ${circleCircumference}`"
                     stroke-dashoffset="0" transform="rotate(-90 100 100)"/>
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#3b82f6" stroke-width="25"
-                    :stroke-dasharray="`${getCircleSegment(statusData.shipped)} 408`"
+                    :stroke-dasharray="`${getCircleSegment(statusData.shipped)} ${circleCircumference}`"
                     :stroke-dashoffset="`-${getCircleSegment(statusData.delivered)}`"
                     transform="rotate(-90 100 100)"/>
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#f59e0b" stroke-width="25"
-                    :stroke-dasharray="`${getCircleSegment(statusData.processing)} 408`"
+                    :stroke-dasharray="`${getCircleSegment(statusData.processing)} ${circleCircumference}`"
                     :stroke-dashoffset="`-${getCircleSegment(statusData.delivered) + getCircleSegment(statusData.shipped)}`"
                     transform="rotate(-90 100 100)"/>
                   <circle cx="100" cy="100" r="65" fill="none" stroke="#ef4444" stroke-width="25"
-                    :stroke-dasharray="`${getCircleSegment(statusData.backordered)} 408`"
+                    :stroke-dasharray="`${getCircleSegment(statusData.backordered)} ${circleCircumference}`"
                     :stroke-dashoffset="`-${getCircleSegment(statusData.delivered) + getCircleSegment(statusData.shipped) + getCircleSegment(statusData.processing)}`"
                     transform="rotate(-90 100 100)"/>
                   <text x="100" y="90" text-anchor="middle" class="donut-center-label">{{ t('dashboard.orderHealth.total') }}</text>
@@ -116,11 +118,11 @@
               <div class="order-health-metrics">
                 <div class="health-metric">
                   <div class="health-metric-label">{{ t('dashboard.orderHealth.revenue') }}</div>
-                  <div class="health-metric-value">{{ formatCurrency(orderHealthMetrics.totalValue, selectedCurrency) }}</div>
+                  <div class="health-metric-value">{{ formatCurrency(orderHealthMetrics.totalValue) }}</div>
                 </div>
                 <div class="health-metric">
                   <div class="health-metric-label">{{ t('dashboard.orderHealth.avgOrderValue') }}</div>
-                  <div class="health-metric-value">{{ formatCurrency(orderHealthMetrics.avgOrderValue, selectedCurrency) }}</div>
+                  <div class="health-metric-value">{{ formatCurrency(orderHealthMetrics.avgOrderValue) }}</div>
                 </div>
                 <div class="health-metric">
                   <div class="health-metric-label">{{ t('dashboard.orderHealth.onTimeRate') }}</div>
@@ -148,7 +150,7 @@
                 <div class="h-bar-label">{{ translateCategory(cat.name) }}</div>
                 <div class="h-bar-container">
                   <div class="h-bar" :style="{ width: (cat.value / maxCategoryValue * 100) + '%', background: cat.color }">
-                    <span class="h-bar-value">{{ selectedCurrency === 'JPY' ? formatCurrency(cat.value, selectedCurrency) : `$${(cat.value / 1000).toFixed(1)}K` }}</span>
+                    <span class="h-bar-value">{{ formatCategoryValue(cat.value) }}</span>
                   </div>
                 </div>
               </div>
@@ -180,7 +182,7 @@
                   <th>{{ t('dashboard.inventoryShortages.shortage') }}</th>
                   <th>{{ t('dashboard.inventoryShortages.daysDelayed') }}</th>
                   <th>{{ t('dashboard.inventoryShortages.priority') }}</th>
-                  <th>Actions</th>
+                  <th>{{ t('dashboard.inventoryShortages.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -195,7 +197,7 @@
                   <td @click="showBacklogDetail(item)" style="cursor: pointer;">{{ item.quantity_available }}</td>
                   <td @click="showBacklogDetail(item)" style="cursor: pointer;">
                     <span class="badge danger">
-                      {{ Math.abs(item.quantity_needed - item.quantity_available) }} {{ t('dashboard.inventoryShortages.unitsShort') }}
+                      {{ shortageUnits(item) }} {{ t('dashboard.inventoryShortages.unitsShort') }}
                     </span>
                   </td>
                   <td @click="showBacklogDetail(item)" style="cursor: pointer;">
@@ -204,24 +206,24 @@
                     </span>
                   </td>
                   <td @click="showBacklogDetail(item)" style="cursor: pointer;">
-                    <span :class="['badge', item.priority]">
+                    <span :class="['badge', priorityClass(item.priority)]">
                       {{ translatePriority(item.priority) }}
                     </span>
                   </td>
                   <td>
                     <button
-                      v-if="!item.purchase_order_id"
+                      v-if="!item.has_purchase_order"
                       @click.stop="openPOModal(item)"
                       class="po-button create"
                     >
-                      Create PO
+                      {{ t('dashboard.inventoryShortages.createPO') }}
                     </button>
                     <button
                       v-else
                       @click.stop="viewPO(item)"
                       class="po-button view"
                     >
-                      View PO
+                      {{ t('dashboard.inventoryShortages.viewPO') }}
                     </button>
                   </td>
                 </tr>
@@ -259,7 +261,7 @@
                   <td>{{ item.sku }}</td>
                   <td>{{ translateCategory(item.category) }}</td>
                   <td>{{ item.unitsOrdered }}</td>
-                  <td><strong>{{ formatCurrency(item.revenue, selectedCurrency) }}</strong></td>
+                  <td><strong>{{ formatCurrency(item.revenue) }}</strong></td>
                   <td>{{ formatDate(item.firstOrderDate) }}</td>
                   <td>
                     <span :class="['badge', getStockBadge(item.stockLevel)]">
@@ -297,22 +299,23 @@
 </template>
 
 <script>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
-import { formatCurrency } from '../utils/currency'
 import ProductDetailModal from '../components/ProductDetailModal.vue'
 import BacklogDetailModal from '../components/BacklogDetailModal.vue'
+import PurchaseOrderModal from '../components/PurchaseOrderModal.vue'
 
 export default {
   name: 'Dashboard',
   components: {
     ProductDetailModal,
     BacklogDetailModal,
+    PurchaseOrderModal,
   },
   setup() {
-    const { t, currentCurrency, translateProductName, translateWarehouse } = useI18n()
+    const { t, currentLocale, currentCurrency, formatCurrency, formatDate, translateCategory, translateProductName, translateWarehouse } = useI18n()
     const loading = ref(true)
     const error = ref(null)
     const summary = ref({})
@@ -337,23 +340,18 @@ export default {
       getCurrentFilters
     } = useFilters()
 
+    // Hardcoded stubs — no API endpoint exposes fulfilled count or fill rate yet
     const ordersData = ref({ fulfilled: 187, goal: 200 })
     const fillRate = ref(96.8)
 
     const revenueGoal = computed(() => {
-      // $800K per month, so if looking at all months (12 months), goal is 12 * 800K = 9.6M
+      // $800K per month — scale by the period in view so the KPI card's
+      // attainment % is comparable to the displayed revenue.
       const monthlyGoal = 800000
-      if (selectedPeriod.value === 'all') {
-        return monthlyGoal * 12 // $9,600,000 for the full year
-      }
-      return monthlyGoal // $800,000 for a single month
-    })
-
-    const revenueGoalDisplay = computed(() => {
-      if (revenueGoal.value >= 1000000) {
-        return `$${(revenueGoal.value / 1000000).toFixed(1)}M`
-      }
-      return `$${(revenueGoal.value / 1000).toFixed(0)}K`
+      if (selectedPeriod.value === 'all') return monthlyGoal * 12
+      // Q1-2025, Q2-2025, etc. — three months per quarter
+      if (/^Q[1-4]-\d{4}$/.test(selectedPeriod.value)) return monthlyGoal * 3
+      return monthlyGoal
     })
 
     const statusData = computed(() => {
@@ -463,14 +461,16 @@ export default {
       // Count orders for each month
       if (Array.isArray(allOrders.value)) {
         allOrders.value.forEach(order => {
-          if (order && order.order_date) {
-            const date = new Date(order.order_date)
-            const monthIndex = date.getMonth()
-            // Check if monthIndex is valid (0-11)
-            if (!isNaN(monthIndex) && monthIndex >= 0 && monthIndex <= 11) {
-              const monthName = monthNames[monthIndex]
-              monthMap[monthName].orders++
-            }
+          if (!order?.order_date) return
+          const date = new Date(order.order_date)
+          // Invalid Date returns NaN from getTime() — getMonth() still
+          // returns NaN here, but checking the time guard up front is the
+          // canonical "is this date parseable?" test.
+          if (isNaN(date.getTime())) return
+          const monthIndex = date.getMonth()
+          if (monthIndex >= 0 && monthIndex <= 11) {
+            const monthName = monthNames[monthIndex]
+            monthMap[monthName].orders++
           }
         })
       }
@@ -530,16 +530,20 @@ export default {
       })
 
       // Convert to array, sort by first order date (earliest first = January at top), then by revenue, and take top 12
+      // toTime returns a finite number for valid dates and Number.MAX_SAFE_INTEGER
+      // for null/undefined/'' or unparseable strings, so the comparator can't
+      // ever return NaN (which would give an implementation-defined sort order).
+      const toTime = (s) => {
+        if (!s) return Number.MAX_SAFE_INTEGER
+        const t = new Date(s).getTime()
+        return Number.isFinite(t) ? t : Number.MAX_SAFE_INTEGER
+      }
       return Object.values(productMap)
         .sort((a, b) => {
-          // Sort by first order date (earliest first)
-          // This ensures products first ordered in January appear before those first ordered in December
-          const dateA = new Date(a.firstOrderDate || '9999-12-31')
-          const dateB = new Date(b.firstOrderDate || '9999-12-31')
-          if (dateA.getTime() !== dateB.getTime()) {
-            return dateA.getTime() - dateB.getTime() // Earlier dates come first
-          }
-          // If dates are equal, sort by revenue (highest first)
+          const tA = toTime(a.firstOrderDate)
+          const tB = toTime(b.firstOrderDate)
+          if (tA !== tB) return tA - tB
+          // If dates tie, sort by revenue (highest first)
           return b.revenue - a.revenue
         })
         .slice(0, 12)
@@ -558,32 +562,66 @@ export default {
       return allBacklogItems.value.filter(b => validSkus.has(b.item_sku))
     })
 
-    const loadData = async () => {
-      try {
-        loading.value = true
-        const filters = getCurrentFilters()
+    let loadId = 0
 
-        const [summaryData, ordersData, inventoryData, backlogData] = await Promise.all([
+    const loadData = async () => {
+      const currentId = ++loadId
+      loading.value = true
+      error.value = null
+      try {
+        const filters = getCurrentFilters()
+        const [summaryData, ordersResponse, inventoryData, backlogData] = await Promise.all([
           api.getDashboardSummary(filters),
           api.getOrders(filters),
           api.getInventory(filters),
           api.getBacklog()
         ])
-
+        if (currentId !== loadId) return
         summary.value = summaryData
-        allOrders.value = ordersData
+        allOrders.value = ordersResponse
         inventoryItems.value = inventoryData
         allBacklogItems.value = backlogData
       } catch (err) {
-        error.value = 'Failed to load dashboard data: ' + err.message
+        if (currentId !== loadId) return
+        error.value = t('common.errorLoadingData')
       } finally {
-        loading.value = false
+        if (currentId === loadId) loading.value = false
       }
     }
 
     const calculatePercentage = (value, goal) => {
-      return ((value / goal) * 100).toFixed(2)
+      // Guard goal === 0 so the template doesn't render the literal
+      // "Infinity%" — `(value / 0) * 100` is Infinity, .toFixed(2) returns
+      // "Infinity", and parseFloat happily round-trips that. Returning 0
+      // also keeps the >= 100 comparison and the kpi-card--warning class
+      // intent honest: a zero-goal KPI hasn't been "met".
+      if (!goal) return 0
+      // parseFloat round-trips through toFixed so the template comparison
+      // (`>= 100`) works against a number, not a string.
+      return parseFloat(((value / goal) * 100).toFixed(2))
     }
+
+    // Floor at 0, cap at 100 — for progress-bar widths so an over-goal value
+    // doesn't overflow the track.
+    const clampedPercent = (value, goal) =>
+      Math.min(Math.max(calculatePercentage(value, goal), 0), 100)
+
+    // Compact $X.XK USD label for the category bars; falls back to the
+    // full locale-aware formatCurrency for non-USD locales (e.g. JPY,
+    // where the K suffix and decimal don't apply cleanly).
+    const formatCategoryValue = (value) =>
+      currentCurrency.value === 'USD'
+        ? `$${(value / 1000).toFixed(1)}K`
+        : formatCurrency(value)
+
+    // Bar width for the revenue-vs-goal progress bar, capped at 100%.
+    const revenueProgressPercent = computed(() => {
+      if (!summary.value || !revenueGoal.value) return 0
+      return Math.min((summary.value.total_orders_value / revenueGoal.value) * 100, 100)
+    })
+
+    const shortageUnits = (item) =>
+      Math.abs(item.quantity_needed - item.quantity_available)
 
     // Compute total orders once for efficiency
     const totalOrders = computed(() => {
@@ -591,25 +629,19 @@ export default {
              statusData.value.processing + statusData.value.backordered
     })
 
+    // Donut radius is 65 in the SVG; circumference = 2π·65 ≈ 408. The
+    // template uses ${circleCircumference} in every stroke-dasharray
+    // template literal so the helper and the markup stay in sync if the
+    // radius ever changes.
+    const circleCircumference = 408
     const getCircleSegment = (value) => {
-      return totalOrders.value > 0 ? (value / totalOrders.value) * 440 : 0
+      return totalOrders.value > 0 ? (value / totalOrders.value) * circleCircumference : 0
     }
 
     const getStockBadge = (level) => {
       if (level === 'In Stock') return 'success'
       if (level === 'Low Stock') return 'warning'
       return 'danger'
-    }
-
-    const translateCategory = (category) => {
-      const categoryMap = {
-        'Circuit Boards': t('categories.circuitBoards'),
-        'Sensors': t('categories.sensors'),
-        'Actuators': t('categories.actuators'),
-        'Controllers': t('categories.controllers'),
-        'Power Supplies': t('categories.powerSupplies')
-      }
-      return categoryMap[category] || category
     }
 
     const translateStockLevel = (stockLevel) => {
@@ -632,12 +664,11 @@ export default {
       return priorityMap[priority] || priority
     }
 
-    const formatDate = (dateString) => {
-      if (!dateString) return '-'
-      const { currentLocale } = useI18n()
-      const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
-      const date = new Date(dateString)
-      return date.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })
+    // Allowlist API priority strings -> known badge classes so an
+    // unexpected value can't inject an arbitrary class on the span.
+    const priorityClass = (priority) => {
+      const allowed = { high: 'high', medium: 'medium', low: 'low' }
+      return allowed[(priority || '').toLowerCase()] || 'low'
     }
 
     const showProductDetail = (product) => {
@@ -663,21 +694,24 @@ export default {
     }
 
     const handlePOCreated = (poData) => {
-      // Update the backlog item with the new PO ID
-      const item = allBacklogItems.value.find(b => b.id === poData.backlog_item_id)
-      if (item) {
-        item.purchase_order_id = poData.id
-        item.purchase_order = poData
+      const idx = allBacklogItems.value.findIndex(b => b.id === poData.backlog_item_id)
+      if (idx !== -1) {
+        // Replace the whole array rather than assigning by index — makes the
+        // mutation explicit and grep-able, and keeps consumers that only
+        // shallow-watch the ref reacting reliably.
+        const updated = [...allBacklogItems.value]
+        updated[idx] = {
+          ...updated[idx],
+          purchase_order_id: poData.id,
+          purchase_order: poData,
+          has_purchase_order: true
+        }
+        allBacklogItems.value = updated
       }
       showPOModal.value = false
     }
 
-    // Watch for filter changes and reload data
-    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], () => {
-      loadData()
-    })
-
-    onMounted(loadData)
+    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], loadData, { immediate: true })
 
     return {
       t,
@@ -695,14 +729,17 @@ export default {
       topProducts,
       backlogItems,
       calculatePercentage,
+      clampedPercent,
+      formatCategoryValue,
       getCircleSegment,
+      circleCircumference,
       getStockBadge,
       translateCategory,
       translateStockLevel,
       translatePriority,
+      priorityClass,
       formatDate,
       revenueGoal,
-      revenueGoalDisplay,
       showProductModal,
       selectedProduct,
       showProductDetail,
@@ -712,7 +749,8 @@ export default {
       selectedPeriod,
       selectedCurrency: currentCurrency,
       formatCurrency,
-      Math,
+      revenueProgressPercent,
+      shortageUnits,
       translateProductName,
       translateWarehouse,
       showPOModal,
@@ -746,7 +784,7 @@ export default {
 .section-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #475569;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 1rem;
@@ -759,42 +797,70 @@ export default {
 }
 
 .kpi-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-border);
   border-radius: 10px;
   padding: 1rem;
+  transition: border-top-color 0.2s ease;
 }
+
+.kpi-card--positive { border-top-color: #10b981; }
+.kpi-card--warning { border-top-color: #f59e0b; }
+.kpi-card--negative { border-top-color: #ef4444; }
 
 .kpi-header {
   margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .kpi-label {
   font-size: 0.813rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.025em;
+}
+
+.kpi-static-tag {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 0.125rem 0.375rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: help;
 }
 
 .kpi-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--color-text-heading);
   margin-bottom: 0.5rem;
   letter-spacing: -0.025em;
 }
 
 .kpi-goal {
   font-size: 0.813rem;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin-bottom: 0.75rem;
 }
+
+.kpi-delta { font-weight: 600; }
+.kpi-delta--positive { color: #16a34a; }
+.kpi-delta--warning { color: #d97706; }
+.kpi-delta--negative { color: #dc2626; }
 
 .kpi-progress-bar {
   width: 100%;
   height: 6px;
-  background: #f1f5f9;
+  background: var(--color-bg-subtle);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -808,6 +874,10 @@ export default {
 
 .kpi-progress.success {
   background: #10b981;
+}
+
+.kpi-progress--warning {
+  background: #f59e0b;
 }
 
 .charts-grid {

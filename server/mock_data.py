@@ -6,16 +6,27 @@ All data is from September 2025 and includes warehouse, category, and date field
 
 import json
 import os
+import sys
 
 # Get the directory where this file is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 
 def load_json_file(filename):
-    """Load data from a JSON file in the data directory"""
+    """Load data from a JSON file in the data directory.
+    Wraps the underlying file/JSON errors with a clear message and exits
+    cleanly so a missing or malformed dataset doesn't crash startup with
+    a confusing FileNotFoundError or JSONDecodeError traceback."""
     filepath = os.path.join(DATA_DIR, filename)
-    with open(filepath, 'r') as f:
-        return json.load(f)
+    try:
+        with open(filepath, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        sys.stderr.write(f"\n[mock_data] Required data file is missing: {filepath}\n")
+        raise SystemExit(1)
+    except json.JSONDecodeError as e:
+        sys.stderr.write(f"\n[mock_data] Invalid JSON in {filepath}: {e}\n")
+        raise SystemExit(1)
 
 # Load all datasets from JSON files
 inventory_items = load_json_file('inventory.json')
@@ -34,6 +45,9 @@ recent_transactions = load_json_file('transactions.json')
 
 # Load purchase orders
 purchase_orders = load_json_file('purchase_orders.json')
+
+# Load tasks (mutable in-memory list; changes do not persist to disk)
+tasks = list(load_json_file('tasks.json'))
 
 # All data is now loaded from JSON files in the data/ directory
 # This allows for easier maintenance and updates of the sample data

@@ -5,7 +5,7 @@
         <div class="modal-container" @click.stop>
           <div class="modal-header">
             <h3 class="modal-title">Inventory Shortage Details</h3>
-            <button class="close-button" @click="close">
+            <button class="close-button" :aria-label="t('common.close')" @click="close">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
@@ -88,7 +88,7 @@
 import { computed } from 'vue'
 import { useI18n } from '../composables/useI18n'
 
-const { translateProductName } = useI18n()
+const { t, translateProductName } = useI18n()
 
 const props = defineProps({
   isOpen: {

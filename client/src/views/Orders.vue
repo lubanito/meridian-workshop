@@ -11,19 +11,19 @@
       <div class="stats-grid">
         <div class="stat-card success">
           <div class="stat-label">{{ t('status.delivered') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Delivered').length }}</div>
+          <div class="stat-value">{{ statusCounts.Delivered }}</div>
         </div>
         <div class="stat-card info">
           <div class="stat-label">{{ t('status.shipped') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Shipped').length }}</div>
+          <div class="stat-value">{{ statusCounts.Shipped }}</div>
         </div>
         <div class="stat-card warning">
           <div class="stat-label">{{ t('status.processing') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Processing').length }}</div>
+          <div class="stat-value">{{ statusCounts.Processing }}</div>
         </div>
         <div class="stat-card danger">
           <div class="stat-label">{{ t('status.backordered') }}</div>
-          <div class="stat-value">{{ getOrdersByStatus('Backordered').length }}</div>
+          <div class="stat-value">{{ statusCounts.Backordered }}</div>
         </div>
       </div>
 
@@ -54,9 +54,9 @@
                       {{ t('orders.itemsCount', { count: order.items.length }) }}
                     </summary>
                     <div class="items-dropdown">
-                      <div v-for="(item, idx) in order.items" :key="idx" class="item-entry">
+                      <div v-for="item in order.items" :key="item.sku" class="item-entry">
                         <span class="item-name">{{ translateProductName(item.name) }}</span>
-                        <span class="item-meta">{{ t('orders.quantity') }}: {{ item.quantity }} @ {{ currencySymbol }}{{ item.unit_price }}</span>
+                        <span class="item-meta">{{ t('orders.quantity') }}: {{ item.quantity }} @ {{ formatCurrency(item.unit_price) }}</span>
                       </div>
                     </div>
                   </details>
@@ -68,7 +68,7 @@
                 </td>
                 <td class="col-date">{{ formatDate(order.order_date) }}</td>
                 <td class="col-date">{{ formatDate(order.expected_delivery) }}</td>
-                <td class="col-value"><strong>{{ currencySymbol }}{{ order.total_value.toLocaleString() }}</strong></td>
+                <td class="col-value"><strong>{{ formatCurrency(order.total_value) }}</strong></td>
               </tr>
             </tbody>
           </table>
@@ -79,7 +79,7 @@
 </template>
 
 <script>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { api } from '../api'
 import { useFilters } from '../composables/useFilters'
 import { useI18n } from '../composables/useI18n'
@@ -87,11 +87,8 @@ import { useI18n } from '../composables/useI18n'
 export default {
   name: 'Orders',
   setup() {
-    const { t, currentCurrency, translateProductName, translateCustomerName } = useI18n()
+    const { t, currentLocale, formatCurrency, translateProductName, translateCustomerName } = useI18n()
 
-    const currencySymbol = computed(() => {
-      return currentCurrency.value === 'JPY' ? '¥' : '$'
-    })
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
@@ -106,32 +103,37 @@ export default {
     } = useFilters()
 
     const loadOrders = async () => {
+      loading.value = true
+      error.value = null
       try {
-        loading.value = true
         const filters = getCurrentFilters()
         const fetchedOrders = await api.getOrders(filters)
 
         // Sort orders by order_date (earliest first)
-        orders.value = fetchedOrders.sort((a, b) => {
+        orders.value = fetchedOrders.slice().sort((a, b) => {
           const dateA = new Date(a.order_date)
           const dateB = new Date(b.order_date)
           return dateA - dateB
         })
-      } catch (err) {
-        error.value = 'Failed to load orders: ' + err.message
+      } catch {
+        error.value = t('common.errorLoadingData')
       } finally {
         loading.value = false
       }
     }
 
-    // Watch for filter changes and reload data
-    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], () => {
-      loadOrders()
-    })
+    watch([selectedPeriod, selectedLocation, selectedCategory, selectedStatus], loadOrders, { immediate: true })
 
-    const getOrdersByStatus = (status) => {
-      return orders.value.filter(order => order.status === status)
-    }
+    // Single pass over orders builds a status -> count map. The template
+    // reads counts via statusCounts.Delivered etc., so re-renders don't
+    // re-iterate orders four times per status badge.
+    const statusCounts = computed(() => {
+      const counts = { Delivered: 0, Shipped: 0, Processing: 0, Backordered: 0 }
+      for (const o of orders.value) {
+        if (counts[o.status] !== undefined) counts[o.status]++
+      }
+      return counts
+    })
 
     const getOrderStatusClass = (status) => {
       const statusMap = {
@@ -144,26 +146,26 @@ export default {
     }
 
     const formatDate = (dateString) => {
-      const { currentLocale } = useI18n()
+      if (!dateString) return '—'
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return '—'
       const locale = currentLocale.value === 'ja' ? 'ja-JP' : 'en-US'
-      return new Date(dateString).toLocaleDateString(locale, {
+      return date.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
       })
     }
 
-    onMounted(loadOrders)
-
     return {
       t,
       loading,
       error,
       orders,
-      getOrdersByStatus,
+      statusCounts,
       getOrderStatusClass,
       formatDate,
-      currencySymbol,
+      formatCurrency,
       translateProductName,
       translateCustomerName
     }

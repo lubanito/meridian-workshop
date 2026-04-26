@@ -185,7 +185,7 @@ export default {
     CostDetailModal
   },
   setup() {
-    const { t, currentCurrency } = useI18n()
+    const { t, currentCurrency, translateCategory: translateProductCategory } = useI18n()
     const loading = ref(true)
     const error = ref(null)
     const allMonthlySpending = ref([])
@@ -426,29 +426,19 @@ export default {
       return monthMap[month] || month
     }
 
-    const translateCategory = (category) => {
-      // First try spending categories
-      const spendingCategoryMap = {
-        'Raw Materials': t('spendingCategories.rawMaterials'),
-        'Components': t('spendingCategories.components'),
-        'Equipment': t('spendingCategories.equipment'),
-        'Consumables': t('spendingCategories.consumables')
-      }
-
-      // Then try product categories
-      const productCategoryMap = {
-        'Circuit Boards': t('categories.circuitBoards'),
-        'Sensors': t('categories.sensors'),
-        'Actuators': t('categories.actuators'),
-        'Controllers': t('categories.controllers'),
-        'Power Supplies': t('categories.powerSupplies')
-      }
-
-      return spendingCategoryMap[category] || productCategoryMap[category] || category
+    // Spending mixes spend-only labels (Raw Materials, Components, ...) with
+    // product categories. Try the spend-only map first, then fall back to
+    // the shared product-category translator.
+    const SPENDING_CATEGORY_KEYS = {
+      'Raw Materials': 'spendingCategories.rawMaterials',
+      'Components': 'spendingCategories.components',
+      'Equipment': 'spendingCategories.equipment',
+      'Consumables': 'spendingCategories.consumables'
     }
+    const translateCategory = (category) =>
+      SPENDING_CATEGORY_KEYS[category] ? t(SPENDING_CATEGORY_KEYS[category]) : translateProductCategory(category)
 
     const handleTransactionClick = (transaction) => {
-      console.log('Transaction clicked:', transaction)
       alert(`Transaction Details:\n\nID: ${transaction.id}\nDescription: ${transaction.description}\nVendor: ${transaction.vendor}\nDate: ${formatDateShort(transaction.date)}\nAmount: $${transaction.amount.toLocaleString()}`)
     }
 

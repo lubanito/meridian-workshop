@@ -5,7 +5,7 @@
         <div class="modal-container" @click.stop>
           <div class="modal-header">
             <h3 class="modal-title">{{ t('profileDetails.title') }}</h3>
-            <button class="close-button" @click="close">
+            <button class="close-button" :aria-label="t('common.close')" @click="close">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path d="M15 5L5 15M5 5L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>

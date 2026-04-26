@@ -6,6 +6,8 @@ export default {
     orders: '注文',
     finance: '財務',
     demandForecast: '需要予測',
+    reports: 'レポート',
+    restocking: '補充',
     companyName: '触媒コンポーネンツ',
     subtitle: '在庫管理システム'
   },
@@ -22,7 +24,9 @@ export default {
       revenueYTD: '収益（注文）年初来',
       revenueMTD: '収益（注文）月初来',
       avgProcessingTime: '平均処理時間（日）',
-      goal: '目標'
+      goal: '目標',
+      staticTag: '年初来',
+      staticHint: '年初来のスナップショット — フィルターには反応しません'
     },
     summary: {
       title: '概要'
@@ -55,7 +59,10 @@ export default {
       daysDelayed: '遅延日数',
       priority: '優先度',
       unitsShort: '単位不足',
-      days: '日'
+      days: '日',
+      actions: 'アクション',
+      createPO: '発注書作成',
+      viewPO: '発注書を見る'
     },
     topProducts: {
       title: '収益別トップ製品',
@@ -188,6 +195,75 @@ export default {
     }
   },
 
+  // Reports
+  reports: {
+    title: 'パフォーマンスレポート',
+    description: '四半期パフォーマンス指標と月次トレンドの表示',
+    quarterlyPerformance: '四半期別パフォーマンス',
+    quarterlyMonthFilterNote: '四半期表示は単月フィルターでは絞り込まれません — 常に四半期全体を対象とします。',
+    monthlyTrend: '月次収益トレンド',
+    monthOverMonth: '月次トレンド分析',
+    table: {
+      quarter: '四半期',
+      totalOrders: '総注文数',
+      totalRevenue: '総収益',
+      avgOrderValue: '平均注文額',
+      fulfillmentRate: '注文充足率',
+      month: '月',
+      orders: '注文数',
+      revenue: '収益',
+      change: '変化',
+      growthRate: '成長率'
+    },
+    stats: {
+      totalRevenue: '総収益（年初来）',
+      avgMonthlyRevenue: '月平均収益',
+      totalOrders: '総注文数（年初来）',
+      bestQuarter: '最優秀四半期'
+    }
+  },
+
+  // Restocking
+  restocking: {
+    title: '補充推薦',
+    description: '現在の在庫レベルと需要予測に基づく発注書推薦',
+    belowReorderPoint: '再注文点未満',
+    increasingDemand: '需要増加',
+    totalCandidates: '候補品目数',
+    budgetUtilization: '予算使用率',
+    budgetCeiling: '予算上限',
+    budgetLabel: '予算上限',
+    items: '件',
+    overBudget: '予算超過',
+    table: {
+      title: '推奨発注書',
+      priority: '優先度',
+      name: '品目名',
+      category: 'カテゴリ',
+      onHand: '手持在庫',
+      reorderPoint: '再注文点',
+      demandForecast: '需要予測',
+      qtyToOrder: '発注数量',
+      unitCost: '単価',
+      estCost: '推定費用'
+    },
+    summary: {
+      totalSelected: '選択合計：',
+      of: '/',
+      budget: '予算',
+      overBudget: '予算超過',
+      withinBudget: '予算内',
+      withinBudgetHint: '予算内：{amount}（フラグ付きの行を除く）',
+      total: '合計：'
+    },
+    previewDraft: 'ドラフトをプレビュー',
+    draftHint: 'アプリ内プレビューのみ — 仕入先への発注は送信されません。',
+    noItemsSelected: 'ドラフトを表示するには、少なくとも1行で数量を1以上に設定してください。',
+    noRecommendations: '補充推薦はありません — すべてのSKUが再注文点以上であり、需要は安定しています。',
+    filterScopeNote: '推薦は場所とカテゴリでスコープされます。期間と注文ステータスのフィルターはこのページには適用されません。',
+    successMessage: '発注書草案を確認用に準備しました（まだ送信されていません）。'
+  },
+
   // Filters
   filters: {
     timePeriod: '期間',
@@ -195,7 +271,8 @@ export default {
     category: 'カテゴリ',
     orderStatus: '注文ステータス',
     all: 'すべて',
-    allMonths: 'すべての月'
+    allMonths: 'すべての月',
+    resetAll: 'すべてのフィルターをリセット'
   },
 
   // Statuses
@@ -248,6 +325,9 @@ export default {
   },
 
   // Months
+  // Note: 'may' (= '5月') has only one entry — short and long form are
+  // identical in Japanese the same way "May" is identical in English,
+  // so there is intentionally no second "may: '5月'" further down.
   months: {
     jan: '1月',
     feb: '2月',
@@ -311,10 +391,17 @@ export default {
     selectLanguage: '言語を選択'
   },
 
+  // Theme toggle
+  theme: {
+    switchToLight: 'ライトモードに切り替え',
+    switchToDark: 'ダークモードに切り替え'
+  },
+
   // Common
   common: {
     loading: '読み込み中...',
     error: 'エラー',
+    errorLoadingData: 'データの読み込みに失敗しました。もう一度お試しください。',
     noData: 'データがありません',
     viewDetails: '詳細を見る',
     close: '閉じる',
@@ -324,6 +411,34 @@ export default {
     filter: 'フィルター',
     export: 'エクスポート',
     items: '件'
+  },
+
+  // Purchase Order Modal
+  purchaseOrder: {
+    createTitle: '発注書を作成',
+    viewTitle: '発注書の詳細',
+    shortage: '不足',
+    units: '単位',
+    supplierName: '仕入先名',
+    supplierPlaceholder: '仕入先名を入力',
+    quantity: '数量',
+    unitCost: '単価',
+    unitCostHint: '最小値 {min}',
+    expectedDelivery: '納期予定日',
+    notes: '備考（任意）',
+    notesPlaceholder: '追加メモ...',
+    loading: '発注書を読み込み中...',
+    loadError: '発注書の詳細を読み込めませんでした。',
+    notCreated: 'このバックログ項目には、まだ発注書が作成されていません。',
+    poId: '発注書番号',
+    supplier: '仕入先',
+    totalCost: '合計費用',
+    status: 'ステータス',
+    created: '作成日',
+    notesLabel: '備考',
+    creating: '作成中...',
+    createOrder: '注文を作成',
+    failed: '発注書の作成に失敗しました。'
   },
 
   // Product Names
