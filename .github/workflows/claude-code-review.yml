@@ -11,9 +11,6 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
-      # OIDC: the action exchanges this for an app token to authenticate
-      # MCP github calls. Earlier run logs show "Requesting OIDC token..."
-      # — removing this breaks the review job with a 401 at startup.
       id-token: write
 
     steps:
