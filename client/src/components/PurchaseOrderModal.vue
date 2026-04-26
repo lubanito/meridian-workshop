@@ -40,7 +40,7 @@
                 </div>
                 <div class="form-field">
                   <label for="po-unit-cost" class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
-                  <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" min="0" :step="unitCostStep" required class="form-input" />
+                  <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" :min="unitCostMin" :step="unitCostStep" required class="form-input" />
                 </div>
                 <div class="form-field">
                   <label for="po-delivery-date" class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
@@ -182,6 +182,10 @@ const { t, formatCurrency, formatDate, currentCurrency } = useI18n()
 // session enter fractional yen, which the formatter would round-trip as
 // the literal value but `formatCurrency` strips for display anyway.
 const unitCostStep = computed(() => (currentCurrency.value === 'JPY' ? 1 : 0.01))
+// Mirror the server's Field(..., ge=0.01) so the form rejects sub-cent
+// values inline rather than relying on a 422 round-trip. JPY rejects
+// anything below 1 yen.
+const unitCostMin = computed(() => (currentCurrency.value === 'JPY' ? 1 : 0.01))
 
 // YYYY-MM-DD for the date-input `min` attribute. Recomputed each time
 // the modal opens so a session that's been idle past midnight doesn't
@@ -212,7 +216,7 @@ const submitting = ref(false)
 const isFormValid = computed(() => Boolean(
   form.value.supplier_name.trim() &&
   form.value.quantity > 0 &&
-  form.value.unit_cost > 0 &&
+  form.value.unit_cost >= unitCostMin.value &&
   form.value.expected_delivery_date
 ))
 

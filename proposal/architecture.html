@@ -398,6 +398,16 @@
         <td>Auth + persistence</td>
         <td>Task / PO endpoints have no authentication and use module-level Python lists for storage. <code>FIXME(auth)</code> and <code>FIXME(persistence)</code> in <code>main.py</code> — must be addressed before any production deployment.</td>
       </tr>
+      <tr>
+        <td><span class="sev sev-low">Open</span></td>
+        <td>Mock task titles</td>
+        <td>Seeded mock tasks in <code>useAuth.js</code> are snapshotted in <code>App.vue</code> at setup time so user deletes/toggles survive a locale switch. Trade-off: switching language mid-session does not retranslate the seed task titles. Acceptable for the demo; resolves once tasks are persisted server-side and titles come from API responses.</td>
+      </tr>
+      <tr>
+        <td><span class="sev sev-low">Open</span></td>
+        <td>Currency precision</td>
+        <td><code>unit_cost</code> and order totals are carried as float. <code>Field(..., ge=0.01)</code> rejects sub-cent values, but multi-line aggregations (Restocking budget walk, dashboard totals) can accumulate float error. The DB-backed rewrite should switch to <code>Decimal</code>/<code>NUMERIC</code> or integer minor units. <code>FIXME(money)</code> in <code>main.py</code>.</td>
+      </tr>
     </tbody>
   </table>
 </div>

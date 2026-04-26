@@ -100,6 +100,7 @@
                     type="number"
                     min="0"
                     class="qty-input"
+                    :aria-label="`${t('restocking.table.qtyToOrder')} — ${item.sku}`"
                     @input="updateQty(item.rowKey, $event.target.value)"
                   />
                 </td>
@@ -658,10 +659,10 @@ export default {
 
 /* Draft-state alert (amber, not green) — the action is a preview, not a real submission */
 .success-alert {
-  background: #fef3c7;
-  border: 1px solid #fcd34d;
-  border-left: 4px solid #d97706;
-  color: #78350f;
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-left: 4px solid var(--color-warning);
+  color: var(--color-warning-text);
   padding: 1.25rem 1.5rem;
   border-radius: 8px;
   margin-bottom: 1.25rem;
@@ -676,11 +677,5 @@ export default {
 .success-total {
   font-size: 0.938rem;
   margin-top: 0.5rem;
-}
-
-[data-theme="dark"] .success-alert {
-  background: rgba(217, 119, 6, 0.15);
-  border-color: #d97706;
-  color: #fcd34d;
 }
 </style>

@@ -169,8 +169,11 @@ export default {
 
     const bestQuarter = computed(() => {
       if (!quarterlyData.value.length) return '-'
-      return quarterlyData.value.reduce((best, q) =>
-        q.total_revenue > best.total_revenue ? q : best
+      // Pass an explicit initial value so reduce can't surprise a future
+      // reader who removes the early-return guard above.
+      return quarterlyData.value.reduce(
+        (best, q) => (q.total_revenue > best.total_revenue ? q : best),
+        quarterlyData.value[0]
       ).quarter
     })
 

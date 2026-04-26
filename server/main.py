@@ -186,11 +186,21 @@ class PurchaseOrder(BaseModel):
 # '2025-04-26T00:00:00' and '2025-04-26+09:00'. We want strict YYYY-MM-DD
 # only, so anchor with strptime which rejects extra characters AND validates
 # the calendar date in one pass.
+_MIN_DATE_YEAR = 2024  # earliest plausible year given the demo dataset
+_MAX_DATE_YEAR = 2050  # 25-year horizon — anything beyond is almost certainly a typo
+
 def _validate_iso_date(value: str) -> str:
     try:
-        datetime.strptime(value, "%Y-%m-%d")
+        parsed = datetime.strptime(value, "%Y-%m-%d")
     except (TypeError, ValueError) as exc:
         raise ValueError(f"expected ISO 8601 date (YYYY-MM-DD), got {value!r}") from exc
+    # Bound the year so a typo'd 2925-... (or year 0001) doesn't get
+    # written into state. Client also pins min=todayIso on the date input.
+    if not (_MIN_DATE_YEAR <= parsed.year <= _MAX_DATE_YEAR):
+        raise ValueError(
+            f"date {value!r} is outside the supported range "
+            f"({_MIN_DATE_YEAR}-{_MAX_DATE_YEAR})"
+        )
     return value
 
 class CreatePurchaseOrderRequest(BaseModel):
@@ -438,7 +448,16 @@ def get_monthly_trends(
 # same backlog_item_id (single uvicorn worker with overlapping awaits, or any
 # multi-worker setup) can both pass the check and both append, defeating the
 # 409. The DB-backed replacement should rely on a UNIQUE constraint on
-# backlog_item_id rather than an application-level scan.
+# backlog_item_id rather than an application-level scan. Note also that
+# get_purchase_order_for_backlog_item only returns the first match — if the
+# race ever does land two POs, the second one is invisible to the UI until
+# it's hand-fixed in the data, which is another reason the DB unique
+# constraint is the right primitive (not an application-level scan).
+# FIXME(money): unit_cost / total_value / order totals are all carried as
+# float. Multi-line aggregations (Restocking budget walk, dashboard
+# total_orders_value) accumulate float error. The DB-backed rewrite should
+# store currency as Decimal (Python) / NUMERIC (SQL) or as integer minor
+# units, never as float.
 @app.get("/api/tasks", response_model=List[Task])
 def get_tasks():
     """Get all tasks"""

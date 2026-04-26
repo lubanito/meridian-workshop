@@ -247,6 +247,10 @@ export default {
   --color-accent-bg: #eff6ff;
   --color-danger: #dc2626;
   --color-danger-bg: #fff7f7;
+  --color-warning: #d97706;
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #fcd34d;
+  --color-warning-text: #78350f;
 }
 
 [data-theme="dark"] {
@@ -268,6 +272,10 @@ export default {
      (#1e293b) is ~4.7:1 contrast, clears WCAG AA. */
   --color-danger: #dc2626;
   --color-danger-bg: rgba(220, 38, 38, 0.08);
+  --color-warning: #d97706;
+  --color-warning-bg: rgba(217, 119, 6, 0.15);
+  --color-warning-border: #d97706;
+  --color-warning-text: #fcd34d;
 }
 
 * {
