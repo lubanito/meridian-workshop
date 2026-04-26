@@ -38,15 +38,15 @@
                 <div class="form-grid">
                   <div class="form-field">
                     <label for="po-supplier-name" class="form-label">{{ t('purchaseOrder.supplierName') }}</label>
-                    <input id="po-supplier-name" v-model="form.supplier_name" type="text" required class="form-input" :placeholder="t('purchaseOrder.supplierPlaceholder')" />
+                    <input id="po-supplier-name" v-model="form.supplier_name" type="text" required maxlength="200" class="form-input" :placeholder="t('purchaseOrder.supplierPlaceholder')" />
                   </div>
                   <div class="form-field">
                     <label for="po-quantity" class="form-label">{{ t('purchaseOrder.quantity') }}</label>
-                    <input id="po-quantity" v-model.number="form.quantity" type="number" min="1" required class="form-input" />
+                    <input id="po-quantity" v-model.number="form.quantity" type="number" min="1" max="1000000" required class="form-input" />
                   </div>
                   <div class="form-field">
                     <label for="po-unit-cost" class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
-                    <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" :min="unitCostMin" :step="unitCostStep" required class="form-input" aria-describedby="po-unit-cost-hint" />
+                    <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" :min="unitCostMin" max="1000000" :step="unitCostStep" required class="form-input" aria-describedby="po-unit-cost-hint" />
                     <small id="po-unit-cost-hint" class="form-hint">{{ t('purchaseOrder.unitCostHint', { min: formatCurrency(unitCostMin) }) }}</small>
                   </div>
                   <div class="form-field">
@@ -56,7 +56,7 @@
                 </div>
                 <div class="form-field full-width">
                   <label for="po-notes" class="form-label">{{ t('purchaseOrder.notes') }}</label>
-                  <textarea id="po-notes" v-model="form.notes" rows="3" class="form-input" :placeholder="t('purchaseOrder.notesPlaceholder')"></textarea>
+                  <textarea id="po-notes" v-model="form.notes" rows="3" maxlength="2000" class="form-input" :placeholder="t('purchaseOrder.notesPlaceholder')"></textarea>
                 </div>
                 <div v-if="formError" class="form-error">{{ formError }}</div>
               </form>

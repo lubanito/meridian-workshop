@@ -84,18 +84,20 @@ def apply_filters(items: list, warehouse: Optional[str] = None, category: Option
     All three comparisons are case-insensitive: warehouse names, categories
     and statuses are display strings ('San Francisco', 'Circuit Boards',
     'Delivered'), so a stray 'tokyo' vs 'Tokyo' across the data files
-    must not silently empty the result. Lowercase both sides — same shape
-    on every filter for one consistent rule."""
+    must not silently empty the result. casefold() (not lower()) so
+    Unicode-aware comparisons stay correct if the dataset is ever
+    extended with non-ASCII warehouses (e.g. 'São Paulo' / 'são paulo',
+    Greek sigma 'ß' vs 'ss')."""
     filtered = items
 
     if warehouse and warehouse != 'all':
-        filtered = [item for item in filtered if item.get('warehouse', '').lower() == warehouse.lower()]
+        filtered = [item for item in filtered if item.get('warehouse', '').casefold() == warehouse.casefold()]
 
     if category and category != 'all':
-        filtered = [item for item in filtered if item.get('category', '').lower() == category.lower()]
+        filtered = [item for item in filtered if item.get('category', '').casefold() == category.casefold()]
 
     if status and status != 'all':
-        filtered = [item for item in filtered if item.get('status', '').lower() == status.lower()]
+        filtered = [item for item in filtered if item.get('status', '').casefold() == status.casefold()]
 
     return filtered
 
@@ -553,7 +555,12 @@ def delete_task(task_id: str):
     wrong task or raises IndexError. list.remove(task) on the captured
     dict is GIL-atomic in CPython and stays correct under interleaving.
     Same-task-id races still converge to the idempotent "task is gone"
-    end state (404 on the loser), which is the correct semantic."""
+    end state (404 on the loser), which is the correct semantic.
+    Note: under PEP 703 free-threaded CPython, list mutation is NOT
+    GIL-protected — if this app is ever ported there before the
+    FIXME(persistence) DB migration retires the in-memory store, wrap
+    the next/remove pair in a threading.Lock (or convert to async +
+    asyncio.Lock like create_purchase_order)."""
     task = next((t for t in tasks if t["id"] == task_id), None)
     if task is None:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")

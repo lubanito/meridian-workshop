@@ -153,6 +153,18 @@ export function useI18n() {
     })
   }
 
+  // Locale-aware integer/decimal renderer. Uses the same BCP 47 tag
+  // resolution as formatCurrency so a Spanish-default browser viewing
+  // the app set to English doesn't silently render '1.234.567' instead
+  // of '1,234,567' — bare `.toLocaleString()` (no args) defers to the
+  // browser locale, not the app's i18n locale. Non-finite input renders
+  // as an em-dash, matching formatCurrency's contract.
+  const formatNumber = (num, opts) => {
+    const n = Number(num)
+    if (!Number.isFinite(n)) return '—'
+    return new Intl.NumberFormat(resolveLocaleTag(currentLocale.value), opts).format(n)
+  }
+
   // Per-currency display precision driven off Intl's resolvedOptions —
   // USD → 2 (display .01), JPY → 0 (display 1), KWD → 3 (display .001).
   // Single source of truth for both PurchaseOrderModal's unitCostStep /
@@ -230,6 +242,7 @@ export function useI18n() {
     currencyPrecision,
     formatCurrency,
     formatDate,
+    formatNumber,
     availableLocales,
     localeName,
     translateCategory,

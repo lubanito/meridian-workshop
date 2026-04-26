@@ -35,6 +35,7 @@
           v-model.number="budgetCeiling"
           type="number"
           min="0"
+          max="1000000000"
           step="1000"
           class="budget-input"
           @blur="normalizeBudget"
@@ -87,11 +88,11 @@
                 <td>{{ translateCategory(item.category) }}</td>
                 <td>{{ translateWarehouse(item.warehouse) }}</td>
                 <td :class="{ 'text-danger': item.quantity_on_hand <= item.reorder_point }">
-                  {{ item.quantity_on_hand.toLocaleString() }}
+                  {{ formatNumber(item.quantity_on_hand) }}
                 </td>
-                <td>{{ item.reorder_point.toLocaleString() }}</td>
+                <td>{{ formatNumber(item.reorder_point) }}</td>
                 <td>
-                  <span v-if="item.forecasted_demand !== null">{{ item.forecasted_demand.toLocaleString() }}</span>
+                  <span v-if="item.forecasted_demand !== null">{{ formatNumber(item.forecasted_demand) }}</span>
                   <span v-else class="text-muted">—</span>
                 </td>
                 <td>
@@ -154,7 +155,7 @@
         <strong>{{ t('restocking.successMessage') }}</strong>
         <ul>
           <li v-for="item in confirmedItems" :key="item.rowKey">
-            {{ item.sku }} — {{ item.name }}: {{ item.qty_to_order.toLocaleString() }} {{ t('purchaseOrder.units') }} @ {{ formatCurrency(item.unit_cost) }} = {{ formatCurrency(item.qty_to_order * item.unit_cost) }}
+            {{ item.sku }} — {{ item.name }}: {{ formatNumber(item.qty_to_order) }} {{ t('purchaseOrder.units') }} @ {{ formatCurrency(item.unit_cost) }} = {{ formatCurrency(item.qty_to_order * item.unit_cost) }}
           </li>
         </ul>
         <div class="success-total">
@@ -179,7 +180,7 @@ export default {
   name: 'Restocking',
   setup() {
     const { selectedLocation, selectedCategory, getCurrentFilters } = useFilters()
-    const { t, formatCurrency, currencyPrecision, translateCategory, translateWarehouse } = useI18n()
+    const { t, formatCurrency, formatNumber, currencyPrecision, translateCategory, translateWarehouse } = useI18n()
 
     // Per-currency multiplier for line-cost rounding. The budget walk and
     // totalSelected sum many `qty * unit_cost` products as raw floats,
@@ -204,9 +205,16 @@ export default {
     // would snap the input back to 0 the instant a user clears the
     // field to retype, which is jarring. Downstream computeds use
     // `!(value > 0)` guards so they treat NaN/negatives as "no budget"
-    // until blur fires.
+    // until blur fires. Also clamp to the same ceiling the input's
+    // `max` enforces, so a paste/keyboard-arrow that bypasses the
+    // browser's max can't make budgetPercent rendering meaningless.
+    const BUDGET_MAX = 1_000_000_000
     const normalizeBudget = () => {
-      if (!(budgetCeiling.value > 0)) budgetCeiling.value = 0
+      if (!(budgetCeiling.value > 0)) {
+        budgetCeiling.value = 0
+      } else if (budgetCeiling.value > BUDGET_MAX) {
+        budgetCeiling.value = BUDGET_MAX
+      }
     }
     const successMessage = ref(false)
     const emptySelectionNotice = ref(false)
@@ -509,6 +517,7 @@ export default {
     return {
       t,
       formatCurrency,
+      formatNumber,
       translateCategory,
       translateWarehouse,
       loading,
