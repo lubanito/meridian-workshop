@@ -590,6 +590,12 @@ export default {
     }
 
     const calculatePercentage = (value, goal) => {
+      // Guard goal === 0 so the template doesn't render the literal
+      // "Infinity%" — `(value / 0) * 100` is Infinity, .toFixed(2) returns
+      // "Infinity", and parseFloat happily round-trips that. Returning 0
+      // also keeps the >= 100 comparison and the kpi-card--warning class
+      // intent honest: a zero-goal KPI hasn't been "met".
+      if (!goal) return 0
       // parseFloat round-trips through toFixed so the template comparison
       // (`>= 100`) works against a number, not a string.
       return parseFloat(((value / goal) * 100).toFixed(2))

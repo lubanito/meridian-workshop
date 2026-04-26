@@ -430,6 +430,7 @@ export default {
     notesPlaceholder: 'Additional notes...',
     loading: 'Loading purchase order...',
     loadError: 'Could not load purchase order details.',
+    notCreated: 'No purchase order has been created for this backlog item yet.',
     poId: 'PO ID',
     supplier: 'Supplier',
     totalCost: 'Total Cost',

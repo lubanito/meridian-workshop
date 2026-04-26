@@ -429,6 +429,7 @@ export default {
     notesPlaceholder: '追加メモ...',
     loading: '発注書を読み込み中...',
     loadError: '発注書の詳細を読み込めませんでした。',
+    notCreated: 'このバックログ項目には、まだ発注書が作成されていません。',
     poId: '発注書番号',
     supplier: '仕入先',
     totalCost: '合計費用',

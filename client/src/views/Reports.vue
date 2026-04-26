@@ -178,12 +178,19 @@ export default {
 
     const bestQuarter = computed(() => {
       if (!quarterlyData.value.length) return '-'
+      // Quarter strings are "Q[1-4]-YYYY"; map to year*4 + qNum so the
+      // most-recent quarter wins on revenue ties. Without this, the
+      // reduce would pick the first-seen quarter, which depends on
+      // server insertion order — fine for the demo, but a real tie
+      // would be a coin-flip across reloads.
+      const keyOf = (q) => parseInt(q.quarter.slice(3), 10) * 4 + parseInt(q.quarter.charAt(1), 10)
       // Pass an explicit initial value so reduce can't surprise a future
       // reader who removes the early-return guard above.
-      return quarterlyData.value.reduce(
-        (best, q) => (q.total_revenue > best.total_revenue ? q : best),
-        quarterlyData.value[0]
-      ).quarter
+      return quarterlyData.value.reduce((best, q) => {
+        if (q.total_revenue > best.total_revenue) return q
+        if (q.total_revenue === best.total_revenue && keyOf(q) > keyOf(best)) return q
+        return best
+      }, quarterlyData.value[0]).quarter
     })
 
     const maxRevenue = computed(() =>

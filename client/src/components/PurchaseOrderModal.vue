@@ -65,7 +65,8 @@
             <template v-else>
               <div v-if="poLoading" class="loading-state">{{ t('purchaseOrder.loading') }}</div>
               <div v-else-if="poLoadError" class="error-state">{{ poLoadError }}</div>
-              <div v-else-if="poData" class="po-details">
+              <div v-else-if="!poData" class="loading-state">{{ t('purchaseOrder.notCreated') }}</div>
+              <div v-else class="po-details">
                 <div class="detail-grid">
                   <div class="detail-item">
                     <div class="detail-label">{{ t('purchaseOrder.poId') }}</div>
@@ -306,10 +307,16 @@ const loadPO = async () => {
   try {
     poData.value = await api.getPurchaseOrderByBacklogItem(props.backlogItem.id)
   } catch (err) {
-    // Surface a user-friendly message but keep the raw error in the
-    // console so devtools shows the network/stack trace.
-    console.error('[PurchaseOrderModal] loadPO failed:', err)
-    poLoadError.value = t('purchaseOrder.loadError')
+    // Distinguish "no PO yet for this backlog item" (server 404, expected
+    // for any backlog item that hasn't had one created) from a real
+    // load failure (network, 5xx). The 404 case should render an empty
+    // state, not a generic "couldn't load" error.
+    if (err?.response?.status === 404) {
+      poData.value = null
+    } else {
+      console.error('[PurchaseOrderModal] loadPO failed:', err)
+      poLoadError.value = t('purchaseOrder.loadError')
+    }
   } finally {
     poLoading.value = false
   }
