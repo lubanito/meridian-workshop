@@ -36,7 +36,7 @@ jobs:
             mcp__github__get_pull_request,mcp__github__get_pull_request_files,mcp__github__get_pull_request_diff,mcp__github__list_pull_request_files,Bash
           prompt: |
             Review PR #${{ github.event.pull_request.number }} in ${{ github.repository }}.
-            1. Call mcp__github__get_pull_request with owner="lubanito", repo="meridian-workshop", pull_number=${{ github.event.pull_request.number }} to read the PR.
+            1. Call mcp__github__get_pull_request with owner="${{ github.event.repository.owner.login }}", repo="${{ github.event.repository.name }}", pull_number=${{ github.event.pull_request.number }} to read the PR.
             2. Call mcp__github__get_pull_request_files with the same args to see changed files.
             3. Analyze the changes for bugs, security issues, and Vue 3 best practices.
             4. Run this Bash command to post your review:
