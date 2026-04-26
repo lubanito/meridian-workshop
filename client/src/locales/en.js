@@ -202,7 +202,7 @@ export default {
     quarterlyPerformance: 'Quarterly Performance',
     quarterlyMonthFilterNote: 'Quarterly view is not narrowed by single-month filters — it always covers full quarters.',
     monthlyTrend: 'Monthly Revenue Trend',
-    monthOverMonth: 'Month-over-Month Analysis',
+    monthOverMonth: 'Monthly Trend Analysis',
     table: {
       quarter: 'Quarter',
       totalOrders: 'Total Orders',

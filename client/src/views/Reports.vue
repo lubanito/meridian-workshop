@@ -71,9 +71,10 @@
         </div>
       </div>
 
-      <!-- Month-over-Month Comparison — only meaningful when the user is
-           looking at a multi-month range. With a single month selected,
-           every row except the first lacks a previous-month comparator. -->
+      <!-- Monthly trend table with row-over-row deltas. Hidden when a
+           single month is filtered (every row except the first lacks a
+           previous-month comparator); still useful under a quarter filter
+           where the three months in scope produce meaningful deltas. -->
       <div v-if="!monthFilterActive" class="card">
         <div class="card-header">
           <h3 class="card-title">{{ t('reports.monthOverMonth') }}</h3>

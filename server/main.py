@@ -224,10 +224,16 @@ class CreatePurchaseOrderRequest(BaseModel):
     # Real backlog ids are short ("backlog-001" etc.), 100 chars is generous.
     backlog_item_id: str = Field(..., min_length=1, max_length=100)
     supplier_name: str = Field(..., min_length=1, max_length=200)
-    quantity: int = Field(..., gt=0)
+    # Cap quantity at 1M units — the demo dataset's largest backlog item is
+    # in the low hundreds, and an unbounded int would let a malformed
+    # client (or a probe) submit 10**18 and pollute every downstream
+    # aggregate (dashboard total_orders_value, restocking budget walk).
+    quantity: int = Field(..., gt=0, le=1_000_000)
     # ge=0.01 instead of gt=0 — the smallest currency unit that won't drift
     # via float multiplication on multi-row totals. Anything smaller is a 422.
-    unit_cost: float = Field(..., ge=0.01)
+    # le=1_000_000 caps a single line item at $1M / ¥1M — generous for the
+    # demo, hostile to the same overflow-via-input attack as quantity above.
+    unit_cost: float = Field(..., ge=0.01, le=1_000_000)
     # max_length matches the strict YYYY-MM-DD shape the validator below
     # enforces — anything longer is a typo or a probe and 422s before the
     # validator even sees it, keeping error messages tight.
@@ -504,7 +510,12 @@ def create_task(req: CreateTaskRequest):
 
 @app.delete("/api/tasks/{task_id}", status_code=204)
 def delete_task(task_id: str):
-    """Delete a task"""
+    """Delete a task.
+    Intentionally not under _purchase_order_lock-style serialization: a
+    racing second delete just hits 404 (idempotent end state — the task
+    is gone), which is the correct semantic. The dup-PO race needed a
+    lock because the second writer would have appended a *new* row,
+    silently breaking the one-PO-per-backlog invariant."""
     idx = next((i for i, t in enumerate(tasks) if t["id"] == task_id), None)
     if idx is None:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
@@ -512,7 +523,10 @@ def delete_task(task_id: str):
 
 @app.patch("/api/tasks/{task_id}", response_model=Task)
 def toggle_task(task_id: str):
-    """Toggle task completed state"""
+    """Toggle task completed state.
+    Like delete_task, no lock: two racing toggles converge to one of the
+    two valid boolean states — there's no invariant to violate, just a
+    last-writer-wins ordering on a single field."""
     task = next((t for t in tasks if t["id"] == task_id), None)
     if not task:
         raise HTTPException(status_code=404, detail=f"Task {task_id} not found")

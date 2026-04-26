@@ -202,7 +202,7 @@ export default {
     quarterlyPerformance: '四半期別パフォーマンス',
     quarterlyMonthFilterNote: '四半期表示は単月フィルターでは絞り込まれません — 常に四半期全体を対象とします。',
     monthlyTrend: '月次収益トレンド',
-    monthOverMonth: '前月比分析',
+    monthOverMonth: '月次トレンド分析',
     table: {
       quarter: '四半期',
       totalOrders: '総注文数',

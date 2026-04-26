@@ -293,6 +293,11 @@ export default {
       // While the user is mid-typing leave the displayed value alone if
       // they cleared the field (raw === ''), otherwise the input snaps to
       // 0 between keystrokes and the cursor jumps. Normalise to 0 on @blur.
+      // Trade-off: editedQtys[rowKey] is briefly stale (still the previous
+      // value) while raw === ''. previewDraftPOs would read that stale
+      // value if invoked between the keystroke and @blur — unreachable in
+      // practice because clicking Generate forces blur first, but worth
+      // the note for any future programmatic caller.
       if (raw === '') return
       editedQtys.value[rowKey] = Math.max(0, Math.floor(Number(raw) || 0))
       // Mark this as a user-driven edit so the success-banner clear
