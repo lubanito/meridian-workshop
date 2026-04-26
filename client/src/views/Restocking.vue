@@ -455,19 +455,12 @@ export default {
     // inventory + demand, not the backlog — so we keep this in-memory and
     // surface a "not yet submitted" banner.
     const previewDraftPOs = async () => {
-      // Defensive flush: walk every row's edited qty through normalizeQty
-      // so any input the user left empty/non-numeric is snapped to 0
-      // before we read editedQtys. updateQty deliberately ignores empty
-      // raw values to avoid cursor jumps mid-typing, which leaves
-      // editedQtys stale for that row until @blur fires. A real click
-      // forces blur first, but a programmatic caller (autosave timer,
-      // hotkey, parent-driven submit) wouldn't — this guards against it.
-      for (const item of sortedRecommendations.value) {
-        const current = editedQtys.value[item.rowKey]
-        if (current === undefined || current === null || Number.isNaN(current)) {
-          normalizeQty(item.rowKey, '')
-        }
-      }
+      // The recommendations watcher seeds every rowKey with a number on
+      // every fetch, and updateQty coerces typed input through Math.max
+      // + Math.floor + Number(...) || 0, so editedQtys[rowKey] is always
+      // a finite non-negative integer for any row in sortedRecommendations.
+      // The only stale-window is the brief empty-input mid-typing case
+      // documented on updateQty, and a real click forces @blur first.
       // Walk sortedRecommendations so the draft summary matches the table
       // order the buyer is looking at, not the raw inventory order.
       const selected = sortedRecommendations.value.filter(i => (editedQtys.value[i.rowKey] ?? 0) > 0)

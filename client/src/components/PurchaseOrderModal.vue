@@ -241,6 +241,12 @@ const poData = ref(null)
 const poLoading = ref(false)
 const poLoadError = ref('')
 
+// Monotonic request id — same pattern as Restocking.vue / Reports.vue
+// so a slow earlier loadPO resolving after a faster later one (or after
+// the modal closes and reopens with a different backlog item) can't
+// overwrite the active view's poData.
+let loadId = 0
+
 // Single watch handles both the keyboard-listener lifecycle and the
 // open-time form/PO setup, so the two concerns can't diverge.
 // Watches both isOpen and backlogItem so a parent can open the modal
@@ -307,12 +313,16 @@ watch(() => [props.isOpen, props.backlogItem], async ([open, item]) => {
 onUnmounted(() => document.removeEventListener('keydown', onKeydown))
 
 const loadPO = async () => {
+  const currentId = ++loadId
   poLoading.value = true
   poLoadError.value = ''
   poData.value = null
   try {
-    poData.value = await api.getPurchaseOrderByBacklogItem(props.backlogItem.id)
+    const result = await api.getPurchaseOrderByBacklogItem(props.backlogItem.id)
+    if (currentId !== loadId) return
+    poData.value = result
   } catch (err) {
+    if (currentId !== loadId) return
     // Distinguish "no PO yet for this backlog item" (server 404, expected
     // for any backlog item that hasn't had one created) from a real
     // load failure (network, 5xx). The 404 case should render an empty
@@ -324,7 +334,7 @@ const loadPO = async () => {
       poLoadError.value = t('purchaseOrder.loadError')
     }
   } finally {
-    poLoading.value = false
+    if (currentId === loadId) poLoading.value = false
   }
 }
 

@@ -80,11 +80,16 @@ def filter_by_month(items: list, month: Optional[str]) -> list:
 
 def apply_filters(items: list, warehouse: Optional[str] = None, category: Optional[str] = None,
                  status: Optional[str] = None) -> list:
-    """Apply common filters to a list of items"""
+    """Apply common filters to a list of items.
+    All three comparisons are case-insensitive: warehouse names, categories
+    and statuses are display strings ('San Francisco', 'Circuit Boards',
+    'Delivered'), so a stray 'tokyo' vs 'Tokyo' across the data files
+    must not silently empty the result. Lowercase both sides — same shape
+    on every filter for one consistent rule."""
     filtered = items
 
     if warehouse and warehouse != 'all':
-        filtered = [item for item in filtered if item.get('warehouse') == warehouse]
+        filtered = [item for item in filtered if item.get('warehouse', '').lower() == warehouse.lower()]
 
     if category and category != 'all':
         filtered = [item for item in filtered if item.get('category', '').lower() == category.lower()]

@@ -142,17 +142,19 @@ export function useI18n() {
   const translateCategory = (category) =>
     CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category]) : category
 
-  // Translate product names
+  // Translate product names. Optional-chain `productNames` so a future
+  // stripped-down locale build (e.g. ja missing the productNames map)
+  // can't NPE the dashboard — fall through to the source string instead.
   const translateProductName = (productName) => {
-    if (currentLocale.value === 'ja' && translations.ja.productNames[productName]) {
+    if (currentLocale.value === 'ja' && translations.ja.productNames?.[productName]) {
       return translations.ja.productNames[productName]
     }
     return productName
   }
 
-  // Translate customer names
+  // Translate customer names. Same optional-chain reasoning as above.
   const translateCustomerName = (customerName) => {
-    if (currentLocale.value === 'ja' && translations.ja.customerNames[customerName]) {
+    if (currentLocale.value === 'ja' && translations.ja.customerNames?.[customerName]) {
       return translations.ja.customerNames[customerName]
     }
     return customerName
