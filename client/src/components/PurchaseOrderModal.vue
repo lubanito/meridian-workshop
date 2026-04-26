@@ -81,7 +81,7 @@
                   </div>
                   <div class="detail-item">
                     <div class="detail-label">{{ t('purchaseOrder.expectedDelivery') }}</div>
-                    <div class="detail-value">{{ poData.expected_delivery_date }}</div>
+                    <div class="detail-value">{{ formatDate(poData.expected_delivery_date) }}</div>
                   </div>
                   <div class="detail-item">
                     <div class="detail-label">{{ t('purchaseOrder.status') }}</div>
@@ -91,7 +91,7 @@
                   </div>
                   <div class="detail-item">
                     <div class="detail-label">{{ t('purchaseOrder.created') }}</div>
-                    <div class="detail-value">{{ poData.created_date }}</div>
+                    <div class="detail-value">{{ formatDate(poData.created_date) }}</div>
                   </div>
                 </div>
                 <div v-if="poData.notes" class="po-notes">
@@ -164,7 +164,7 @@ const onKeydown = (e) => {
   }
 }
 
-const { t, formatCurrency } = useI18n()
+const { t, formatCurrency, formatDate } = useI18n()
 
 // YYYY-MM-DD for the date-input `min` attribute. Recomputed each time
 // the modal opens so a session that's been idle past midnight doesn't

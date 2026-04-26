@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
@@ -25,6 +26,12 @@ def _month_prefix(value: str) -> str:
     Robust to bare 'YYYY-MM-DD' as well as ISO 8601 datetimes."""
     return (value or '')[:7]
 
+# Accepted shapes: 'YYYY-MM' (zero-padded month) or 'Q[1-4]-YYYY' (quarter).
+# Anything else returns [] from filter_by_month rather than 422-ing because
+# the value comes from a query string we can't gate at the schema level for
+# legacy callers, but at least we don't pretend partial matches succeeded.
+_MONTH_FILTER_RE = re.compile(r'^\d{4}-(0[1-9]|1[0-2])$')
+
 def filter_by_month(items: list, month: Optional[str]) -> list:
     """Filter items by month/quarter based on order_date field"""
     if not month or month == 'all':
@@ -39,6 +46,8 @@ def filter_by_month(items: list, month: Optional[str]) -> list:
     else:
         # Direct month match using a YYYY-MM slice avoids '2025-1' colliding
         # with '2025-10' and tolerates ISO 8601 datetime suffixes.
+        if not _MONTH_FILTER_RE.match(month):
+            return []  # malformed month filter — return empty rather than partial matches
         return [item for item in items if _month_prefix(item.get('order_date', '')) == month]
 
 def apply_filters(items: list, warehouse: Optional[str] = None, category: Optional[str] = None,
@@ -71,12 +80,17 @@ if not ALLOWED_ORIGINS:
         "ALLOWED_ORIGINS resolved to an empty list. Set it to '*' for dev or "
         "to a comma-separated list of origins for production."
     )
+_IS_WILDCARD = ALLOWED_ORIGINS == ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=ALLOWED_ORIGINS != ["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=not _IS_WILDCARD,
+    # Wildcard origin (dev) keeps the permissive method/header set for
+    # quick iteration. Once a real allowlist is configured, narrow the
+    # surface to only the methods + headers this app actually uses, so a
+    # compromised allowed origin can't probe arbitrary verbs/headers.
+    allow_methods=["*"] if _IS_WILDCARD else ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"] if _IS_WILDCARD else ["Content-Type", "Authorization"],
 )
 
 # Data models

@@ -423,6 +423,15 @@ export default {
     // are module-level refs shared with every component that calls useFilters().
     watch([selectedLocation, selectedCategory], loadData, { immediate: true })
 
+    // Clear the draft preview banner whenever the user edits a qty or the
+    // budget ceiling — the banner snapshots a moment in time, so leaving
+    // it visible after edits would show stale line items.
+    watch(
+      [editedQtys, budgetCeiling],
+      () => { successMessage.value = false },
+      { deep: true }
+    )
+
     onUnmounted(() => {
       if (emptyNoticeTimer) clearTimeout(emptyNoticeTimer)
     })

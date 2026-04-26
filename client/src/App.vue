@@ -86,7 +86,12 @@ export default {
     const showProfileDetails = ref(false)
     const showTasks = ref(false)
     const apiTasks = ref([])
-    // Local copy of seed tasks — avoids mutating useAuth-owned state
+    // Snapshot the seed tasks once at setup time. Trade-off (matches the
+    // useAuth.js comment): a locale switch won't re-translate the seed
+    // task titles, BUT user deletes/toggles applied via this ref are
+    // preserved across locale switches. Translating freshly would require
+    // re-seeding from currentUser on every change, which would silently
+    // restore deletes — strictly worse for the buyer's session state.
     const mockTasks = ref([...(currentUser.value?.tasks ?? [])])
 
     // Dark mode

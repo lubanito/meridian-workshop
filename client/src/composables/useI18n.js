@@ -103,6 +103,16 @@ export function useI18n() {
   // value per currency (USD → 2, JPY → 0).
   // Non-finite input (null/undefined/NaN) renders as an em-dash placeholder
   // so a missing field doesn't surface as the literal string "NaN".
+  // Locale-aware ISO 8601 date renderer. Returns em-dash for null/empty
+  // and unparseable strings rather than letting "Invalid Date" or a raw
+  // YYYY-MM-DD reach the UI.
+  const formatDate = (value, opts = { dateStyle: 'medium' }) => {
+    if (!value) return '—'
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return '—'
+    return new Intl.DateTimeFormat(BCP47_TAGS[currentLocale.value] ?? currentLocale.value, opts).format(d)
+  }
+
   const formatCurrency = (num) => {
     const n = Number(num)
     if (!Number.isFinite(n)) return '—'
@@ -167,6 +177,7 @@ export function useI18n() {
     currentCurrency,
     localeTag,
     formatCurrency,
+    formatDate,
     availableLocales,
     localeName,
     translateCategory,
