@@ -50,16 +50,22 @@
           <h3 class="card-title">{{ t('reports.monthlyTrend') }}</h3>
         </div>
         <div class="chart-container">
-          <div class="bar-chart" role="img" :aria-label="t('reports.monthlyTrend')">
+          <!-- role="group" so the chart announces as a container with
+               named children rather than a single image. Each bar gets
+               its own role="img" + aria-label so a screen reader can
+               read the per-month value, not just the chart title. -->
+          <div class="bar-chart" role="group" :aria-label="t('reports.monthlyTrend')">
             <div v-for="month in monthlyData" :key="month.month" class="bar-wrapper">
               <div class="bar-container">
                 <div
                   class="bar"
+                  role="img"
+                  :aria-label="`${formatMonth(month.month)}: ${formatCurrency(month.revenue)}`"
                   :style="{ height: getBarHeight(month.revenue) + 'px' }"
                   :title="formatCurrency(month.revenue)"
                 ></div>
               </div>
-              <div class="bar-label">{{ formatMonth(month.month) }}</div>
+              <div class="bar-label" aria-hidden="true">{{ formatMonth(month.month) }}</div>
             </div>
           </div>
         </div>

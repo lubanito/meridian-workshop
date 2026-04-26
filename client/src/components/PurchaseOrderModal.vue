@@ -296,6 +296,9 @@ const submit = async () => {
       notes: form.value.notes.trim() || null
     })
     emit('po-created', created)
+    // Dismiss the modal on success — leaving it open after a successful
+    // POST stranded the buyer with no signal that the request landed.
+    emit('close')
   } catch (err) {
     console.error('[PurchaseOrderModal] submit failed:', err)
     formError.value = err?.response?.data?.detail || t('purchaseOrder.failed')

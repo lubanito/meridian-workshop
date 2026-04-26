@@ -185,7 +185,9 @@ def _validate_iso_date(value: str) -> str:
     return value
 
 class CreatePurchaseOrderRequest(BaseModel):
-    backlog_item_id: str
+    # Bound the id so a 100KB string can't reach the duplicate-check scan.
+    # Real backlog ids are short ("backlog-001" etc.), 100 chars is generous.
+    backlog_item_id: str = Field(..., min_length=1, max_length=100)
     supplier_name: str = Field(..., min_length=1, max_length=200)
     quantity: int = Field(..., gt=0)
     # ge=0.01 instead of gt=0 — the smallest currency unit that won't drift
