@@ -335,10 +335,13 @@ export default {
       // but kept here so a future code path adding 'Low' doesn't return
       // NaN from the comparator and trigger implementation-defined sort.
       const priorityOrder = { High: 0, Medium: 1, Low: 2 }
+      // numeric:true so SKU-2 sorts before SKU-10 (natural order),
+      // not after as plain lexicographic compare would have it.
+      const skuCollator = new Intl.Collator(undefined, { numeric: true })
       return [...recommendations.value].sort((a, b) => {
         const pDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
         if (pDiff !== 0) return pDiff
-        return a.sku.localeCompare(b.sku)
+        return skuCollator.compare(a.sku, b.sku)
       })
     })
 

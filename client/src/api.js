@@ -2,15 +2,17 @@ import axios from 'axios'
 
 // Env-overridable so staging/production deployments don't silently keep
 // hitting localhost. .env.example documents the expected variable.
-// Fail loud at module load if a production build is missing the env var,
-// so a misconfigured deploy doesn't silently target the developer's
-// localhost from a user's browser.
-if (import.meta.env.PROD && !import.meta.env.VITE_API_BASE_URL) {
-  throw new Error(
-    'VITE_API_BASE_URL is required for production builds. ' +
-    'Set it at build time (see client/.env.example).'
-  )
-}
+// Surface a missing-PROD-env as an exported sentinel rather than a
+// module-load throw — the entry point in main.js renders a real
+// "configuration error" page using this, so a misconfigured deploy is
+// diagnosable from the browser instead of a blank document with the
+// trace only visible in devtools.
+export const apiConfigError = (import.meta.env.PROD && !import.meta.env.VITE_API_BASE_URL)
+  ? new Error(
+      'VITE_API_BASE_URL is required for production builds. ' +
+      'Set it at build time (see client/.env.example).'
+    )
+  : null
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001/api'
 
 const buildUrl = (path, params) => {

@@ -198,6 +198,10 @@ def _validate_iso_date(value: str, *, allow_past: bool = True) -> str:
     # the server rejecting it as past: ahead-of-UTC zones may have already
     # rolled over to tomorrow_utc while still picking today_local; behind-
     # UTC zones are still on yesterday_utc when picking today_local.
+    # Trade-off accepted: a UTC+0 buyer can also submit yesterday_utc, but
+    # that's a 1-day footgun, not a silent state corruption. The proper
+    # fix would carry the client timezone in the request and pin against
+    # today_local — out of scope for the demo.
     if not allow_past:
         today_utc = datetime.now(timezone.utc).date()
         earliest = today_utc - timedelta(days=1)

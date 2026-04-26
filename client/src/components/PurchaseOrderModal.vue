@@ -184,16 +184,23 @@ const onKeydown = (e) => {
   }
 }
 
-const { t, formatCurrency, formatDate, currentCurrency } = useI18n()
+const { t, formatCurrency, formatDate, currentCurrency, localeTag } = useI18n()
 
-// JPY has no subunit; USD ticks at 0.01. Hardcoding step="0.01" let a JPY
-// session enter fractional yen, which the formatter would round-trip as
-// the literal value but `formatCurrency` strips for display anyway.
-const unitCostStep = computed(() => (currentCurrency.value === 'JPY' ? 1 : 0.01))
-// Mirror the server's Field(..., ge=0.01) so the form rejects sub-cent
-// values inline rather than relying on a 422 round-trip. JPY rejects
-// anything below 1 yen.
-const unitCostMin = computed(() => (currentCurrency.value === 'JPY' ? 1 : 0.01))
+// Drive both step and min off Intl's per-currency fraction digits — JPY → 0
+// (step 1), USD → 2 (step 0.01), KWD → 3 (step 0.001) — same source of
+// truth as formatCurrency. A hardcoded {JPY: 1, else: 0.01} branch would
+// silently round 3-decimal currencies to two if a third locale is added.
+const unitCostStep = computed(() => {
+  const digits = new Intl.NumberFormat(localeTag.value, {
+    style: 'currency',
+    currency: currentCurrency.value
+  }).resolvedOptions().maximumFractionDigits
+  return Math.pow(10, -digits)
+})
+// Mirror the server's Field(..., ge=0.01) so the form rejects sub-unit
+// values inline rather than relying on a 422 round-trip. The minimum is
+// one unit at the currency's display precision — same value as the step.
+const unitCostMin = computed(() => unitCostStep.value)
 
 // YYYY-MM-DD for the date-input `min` attribute. Recomputed each time
 // the modal opens so a session that's been idle past midnight doesn't

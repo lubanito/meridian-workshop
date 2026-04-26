@@ -257,6 +257,11 @@ export default {
 
     const getChangeClass = (current, previous) => {
       const change = current - previous
+      // Gate on the same minUnit threshold as getChangeValue so a sub-unit
+      // delta (e.g. -0.001 USD) renders as $0.00 *without* the negative-
+      // change red tint — text and color must agree on what counts as zero.
+      const minUnit = currentCurrency.value === 'JPY' ? 1 : 0.01
+      if (Math.abs(change) < minUnit) return ''
       if (change > 0) return 'positive-change'
       if (change < 0) return 'negative-change'
       return ''
