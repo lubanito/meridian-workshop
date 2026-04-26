@@ -172,13 +172,13 @@ export default {
       Math.max(...monthlyData.value.map(m => m.revenue), 0)
     )
 
-    // True when the user picked any specific period — currently the
-    // FilterBar only emits month values (YYYY-MM) or 'all', so any
-    // non-'all' value is a single month, and the quarterly endpoint
-    // intentionally ignores the filter to avoid showing a partial
-    // quarter. If quarter-format options (Q1-YYYY) are added to
-    // FilterBar later, this needs an exclusion for those values.
-    const monthFilterActive = computed(() => selectedPeriod.value !== 'all')
+    // True only when the user picked a single-month value (YYYY-MM). The
+    // quarterly endpoint intentionally ignores month-only filters to avoid
+    // showing a partial quarter; this hint surfaces that asymmetry to the
+    // user. The regex makes this forward-compatible with future Q*-YYYY
+    // filter values — those are quarter-shaped, not month-shaped, so the
+    // hint should stay hidden for them.
+    const monthFilterActive = computed(() => /^\d{4}-\d{2}$/.test(selectedPeriod.value))
 
     const loadData = async () => {
       try {
@@ -221,7 +221,10 @@ export default {
       const change = current - previous
       // formatCurrency already renders the locale-appropriate minus sign for
       // negatives; we only need to add an explicit '+' for positive deltas.
-      return change > 0 ? '+' + formatCurrency(change) : formatCurrency(change)
+      // Only show the '+' for changes that won't round to zero in the
+      // current currency display — otherwise a 0.001 delta surfaces as
+      // a misleading "+$0.00" / "+¥0".
+      return change >= 0.01 ? '+' + formatCurrency(change) : formatCurrency(change)
     }
 
     const getChangeClass = (current, previous) => {

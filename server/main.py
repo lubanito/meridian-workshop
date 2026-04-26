@@ -1,7 +1,7 @@
 import os
 import re
 import uuid
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Literal, Optional
@@ -92,6 +92,15 @@ if not ALLOWED_ORIGINS:
         "ALLOWED_ORIGINS resolved to an empty list. Set it to '*' for dev or "
         "to a comma-separated list of origins for production."
     )
+# Reject mixing the wildcard with explicit origins — Starlette/browsers
+# treat the resulting "*, https://foo" allowlist inconsistently, and a
+# misconfig like ALLOWED_ORIGINS="*,https://foo" would also flip
+# allow_credentials on alongside "*", which the spec explicitly forbids.
+if "*" in ALLOWED_ORIGINS and len(ALLOWED_ORIGINS) > 1:
+    raise RuntimeError(
+        "ALLOWED_ORIGINS cannot mix '*' with explicit origins. "
+        "Use either '*' (dev) or a comma-separated list (production)."
+    )
 _IS_WILDCARD = ALLOWED_ORIGINS == ["*"]
 app.add_middleware(
     CORSMiddleware,
@@ -162,14 +171,15 @@ class PurchaseOrder(BaseModel):
     created_date: str
     notes: Optional[str] = None
 
-# ISO 8601 calendar date validators. A bare regex like ^\d{4}-\d{2}-\d{2}$
-# accepts '2025-13-99' / '2025-02-30' — full calendar validity needs a real
-# parse. We keep the wire type as str so the rest of the codebase doesn't
-# need to change, but route through date.fromisoformat() so invalid
-# calendar dates get a 422 with a useful error.
+# ISO 8601 calendar date validators.
+# A bare regex like ^\d{4}-\d{2}-\d{2}$ accepts '2025-13-99' / '2025-02-30',
+# and date.fromisoformat() (Python 3.11+) is *too* permissive — it accepts
+# '2025-04-26T00:00:00' and '2025-04-26+09:00'. We want strict YYYY-MM-DD
+# only, so anchor with strptime which rejects extra characters AND validates
+# the calendar date in one pass.
 def _validate_iso_date(value: str) -> str:
     try:
-        date.fromisoformat(value)
+        datetime.strptime(value, "%Y-%m-%d")
     except (TypeError, ValueError) as exc:
         raise ValueError(f"expected ISO 8601 date (YYYY-MM-DD), got {value!r}") from exc
     return value
@@ -178,7 +188,9 @@ class CreatePurchaseOrderRequest(BaseModel):
     backlog_item_id: str
     supplier_name: str = Field(..., min_length=1, max_length=200)
     quantity: int = Field(..., gt=0)
-    unit_cost: float = Field(..., gt=0)
+    # ge=0.01 instead of gt=0 — the smallest currency unit that won't drift
+    # via float multiplication on multi-row totals. Anything smaller is a 422.
+    unit_cost: float = Field(..., ge=0.01)
     expected_delivery_date: str
     notes: Optional[str] = Field(default=None, max_length=2000)
 
