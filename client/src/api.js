@@ -62,7 +62,7 @@ export const api = {
   },
 
   async getInventoryItem(id) {
-    const response = await axios.get(`${API_BASE_URL}/inventory/${id}`)
+    const response = await axios.get(`${API_BASE_URL}/inventory/${encodeURIComponent(id)}`)
     return response.data
   },
 
@@ -78,7 +78,7 @@ export const api = {
   },
 
   async getOrder(id) {
-    const response = await axios.get(`${API_BASE_URL}/orders/${id}`)
+    const response = await axios.get(`${API_BASE_URL}/orders/${encodeURIComponent(id)}`)
     return response.data
   },
 
@@ -144,12 +144,12 @@ export const api = {
   },
 
   async deleteTask(taskId) {
-    const response = await axios.delete(`${API_BASE_URL}/tasks/${taskId}`)
+    const response = await axios.delete(`${API_BASE_URL}/tasks/${encodeURIComponent(taskId)}`)
     return response.data
   },
 
   async toggleTask(taskId) {
-    const response = await axios.patch(`${API_BASE_URL}/tasks/${taskId}`)
+    const response = await axios.patch(`${API_BASE_URL}/tasks/${encodeURIComponent(taskId)}`)
     return toClientTask(response.data)
   },
 
@@ -163,7 +163,7 @@ export const api = {
     // the resource we're addressing. The server enforces one-PO-per-
     // backlog-item via a 409 at create time, so this stays single-valued
     // in normal usage; bulk-imported data could violate that invariant.
-    const response = await axios.get(`${API_BASE_URL}/backlog/${backlogItemId}/purchase-order`)
+    const response = await axios.get(`${API_BASE_URL}/backlog/${encodeURIComponent(backlogItemId)}/purchase-order`)
     return response.data
   }
 }

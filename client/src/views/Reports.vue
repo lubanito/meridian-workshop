@@ -197,19 +197,28 @@ export default {
     // hint should stay hidden for them.
     const monthFilterActive = computed(() => /^\d{4}-\d{2}$/.test(selectedPeriod.value))
 
+    // Monotonic request id — a slow earlier fetch resolving after a faster
+    // later one would otherwise overwrite the user's current filter result.
+    let loadId = 0
+
     const loadData = async () => {
+      const currentId = ++loadId
+      loading.value = true
+      error.value = null
       try {
-        loading.value = true
-        error.value = null
         const filters = getCurrentFilters()
-        ;[quarterlyData.value, monthlyData.value] = await Promise.all([
+        const [quarterly, monthly] = await Promise.all([
           api.getQuarterlyReports(filters),
           api.getMonthlyTrends(filters)
         ])
+        if (currentId !== loadId) return
+        quarterlyData.value = quarterly
+        monthlyData.value = monthly
       } catch {
+        if (currentId !== loadId) return
         error.value = t('common.errorLoadingData')
       } finally {
-        loading.value = false
+        if (currentId === loadId) loading.value = false
       }
     }
 

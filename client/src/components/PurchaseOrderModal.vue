@@ -29,29 +29,36 @@
             </div>
 
             <template v-if="mode === 'create'">
-              <div class="form-grid">
-                <div class="form-field">
-                  <label for="po-supplier-name" class="form-label">{{ t('purchaseOrder.supplierName') }}</label>
-                  <input id="po-supplier-name" v-model="form.supplier_name" type="text" required class="form-input" :placeholder="t('purchaseOrder.supplierPlaceholder')" />
+              <!-- Real <form> so HTML5 `required` validation fires on submit
+                   and pressing Enter inside any field submits the dialog.
+                   The primary action button lives in the modal-footer
+                   (outside this element) and is associated via form="po-form"
+                   so the original visual layout is preserved. -->
+              <form id="po-form" class="po-form" @submit.prevent="submit">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label for="po-supplier-name" class="form-label">{{ t('purchaseOrder.supplierName') }}</label>
+                    <input id="po-supplier-name" v-model="form.supplier_name" type="text" required class="form-input" :placeholder="t('purchaseOrder.supplierPlaceholder')" />
+                  </div>
+                  <div class="form-field">
+                    <label for="po-quantity" class="form-label">{{ t('purchaseOrder.quantity') }}</label>
+                    <input id="po-quantity" v-model.number="form.quantity" type="number" min="1" required class="form-input" />
+                  </div>
+                  <div class="form-field">
+                    <label for="po-unit-cost" class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
+                    <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" :min="unitCostMin" :step="unitCostStep" required class="form-input" />
+                  </div>
+                  <div class="form-field">
+                    <label for="po-delivery-date" class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
+                    <input id="po-delivery-date" v-model="form.expected_delivery_date" type="date" :min="todayIso" required class="form-input" />
+                  </div>
                 </div>
-                <div class="form-field">
-                  <label for="po-quantity" class="form-label">{{ t('purchaseOrder.quantity') }}</label>
-                  <input id="po-quantity" v-model.number="form.quantity" type="number" min="1" required class="form-input" />
+                <div class="form-field full-width">
+                  <label for="po-notes" class="form-label">{{ t('purchaseOrder.notes') }}</label>
+                  <textarea id="po-notes" v-model="form.notes" rows="3" class="form-input" :placeholder="t('purchaseOrder.notesPlaceholder')"></textarea>
                 </div>
-                <div class="form-field">
-                  <label for="po-unit-cost" class="form-label">{{ t('purchaseOrder.unitCost') }}</label>
-                  <input id="po-unit-cost" v-model.number="form.unit_cost" type="number" :min="unitCostMin" :step="unitCostStep" required class="form-input" />
-                </div>
-                <div class="form-field">
-                  <label for="po-delivery-date" class="form-label">{{ t('purchaseOrder.expectedDelivery') }}</label>
-                  <input id="po-delivery-date" v-model="form.expected_delivery_date" type="date" :min="todayIso" required class="form-input" />
-                </div>
-              </div>
-              <div class="form-field full-width">
-                <label for="po-notes" class="form-label">{{ t('purchaseOrder.notes') }}</label>
-                <textarea id="po-notes" v-model="form.notes" rows="3" class="form-input" :placeholder="t('purchaseOrder.notesPlaceholder')"></textarea>
-              </div>
-              <div v-if="formError" class="form-error">{{ formError }}</div>
+                <div v-if="formError" class="form-error">{{ formError }}</div>
+              </form>
             </template>
 
             <template v-else>
@@ -106,9 +113,10 @@
             <button class="btn-secondary" @click="$emit('close')">{{ t('common.close') }}</button>
             <button
               v-if="mode === 'create'"
+              type="submit"
+              form="po-form"
               class="btn-primary"
               :disabled="submitting || !isFormValid"
-              @click="submit"
             >
               {{ submitting ? t('purchaseOrder.creating') : t('purchaseOrder.createOrder') }}
             </button>

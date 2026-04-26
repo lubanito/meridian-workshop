@@ -189,7 +189,7 @@ class PurchaseOrder(BaseModel):
 _MIN_DATE_YEAR = 2024  # earliest plausible year given the demo dataset
 _MAX_DATE_YEAR = 2050  # 25-year horizon — anything beyond is almost certainly a typo
 
-def _validate_iso_date(value: str) -> str:
+def _validate_iso_date(value: str, *, allow_past: bool = True) -> str:
     try:
         parsed = datetime.strptime(value, "%Y-%m-%d")
     except (TypeError, ValueError) as exc:
@@ -201,6 +201,15 @@ def _validate_iso_date(value: str) -> str:
             f"date {value!r} is outside the supported range "
             f"({_MIN_DATE_YEAR}-{_MAX_DATE_YEAR})"
         )
+    # Some fields (PO expected_delivery_date) must be today or later — the
+    # client pins min=todayIso but a direct API call would otherwise let
+    # past dates land in state.
+    if not allow_past:
+        today = datetime.now(timezone.utc).date()
+        if parsed.date() < today:
+            raise ValueError(
+                f"date {value!r} cannot be in the past (today is {today.isoformat()})"
+            )
     return value
 
 class CreatePurchaseOrderRequest(BaseModel):
@@ -221,7 +230,9 @@ class CreatePurchaseOrderRequest(BaseModel):
     @field_validator('expected_delivery_date')
     @classmethod
     def _check_delivery_date(cls, v: str) -> str:
-        return _validate_iso_date(v)
+        # PO delivery dates must be today or later — past dates would
+        # silently round-trip through the API otherwise.
+        return _validate_iso_date(v, allow_past=False)
 
 class Task(BaseModel):
     id: str
@@ -328,12 +339,16 @@ def get_dashboard_summary(
     pending_orders = len([order for order in filtered_orders if order.get("status", "").lower() in ("processing", "backordered")])
     total_backlog_items = len(backlog_items)
 
+    # Round both currency totals to 2 dp — float aggregations otherwise
+    # produce values like 1234567.8900000001 that the UI faithfully
+    # renders. Real fix is FIXME(money): switch to Decimal/integer-minor.
+    total_orders_value = round(sum(order["total_value"] for order in filtered_orders), 2)
     return {
         "total_inventory_value": round(total_inventory_value, 2),
         "low_stock_items": low_stock_items,
         "pending_orders": pending_orders,
         "total_backlog_items": total_backlog_items,
-        "total_orders_value": sum(order["total_value"] for order in filtered_orders)
+        "total_orders_value": total_orders_value
     }
 
 @app.get("/api/spending/summary")

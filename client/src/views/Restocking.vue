@@ -203,7 +203,12 @@ export default {
     const successAlertRef = ref(null)
     const editedQtys = ref({})
 
+    // Monotonic request id — a slow earlier fetch resolving after a faster
+    // later one would otherwise overwrite the user's current filter result.
+    let loadId = 0
+
     const loadData = async () => {
+      const currentId = ++loadId
       loading.value = true
       error.value = null
       successMessage.value = false
@@ -217,12 +222,14 @@ export default {
           api.getInventory(filters),
           api.getDemandForecasts()
         ])
+        if (currentId !== loadId) return
         inventory.value = invData
         demandForecasts.value = demandData
       } catch {
+        if (currentId !== loadId) return
         error.value = t('common.errorLoadingData')
       } finally {
-        loading.value = false
+        if (currentId === loadId) loading.value = false
       }
     }
 
