@@ -11,6 +11,11 @@ const translations = {
 // Wrapped in try/catch: localStorage may throw in sandboxed iframes or private mode
 const savedLocale = (() => { try { return localStorage.getItem('app-locale') || 'en' } catch { return 'en' } })()
 const currentLocale = ref(savedLocale)
+// Mirror the saved locale onto <html lang="..."> at module load so the
+// initial paint reports the right locale to screen readers / search.
+if (typeof document !== 'undefined') {
+  document.documentElement.lang = savedLocale
+}
 
 // Named export so consumers that need the locale ref *outside* a setup
 // context (e.g. module-scope code in other composables) can read it
@@ -82,6 +87,12 @@ export function useI18n() {
     if (translations[locale]) {
       currentLocale.value = locale
       try { localStorage.setItem('app-locale', locale) } catch {}
+      // Keep <html lang="..."> in sync so screen readers and search
+      // engines report the active locale rather than the index.html
+      // hardcoded default.
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = locale
+      }
     }
   }
 

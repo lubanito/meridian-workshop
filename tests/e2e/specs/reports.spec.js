@@ -15,8 +15,10 @@ test.describe('Reports page', () => {
     const table = page.locator('table').filter({ hasText: 'Quarter' });
     const dataRows = table.getByRole('rowgroup').last().getByRole('row');
     await expect(dataRows.first()).toBeVisible();
-    await expect(table.getByRole('cell', { name: 'Q1-2025' })).toBeVisible();
-    await expect(table.getByRole('cell', { name: 'Q4-2025' })).toBeVisible();
+    // Match any year — the demo dataset is 2025 today, but the seed
+    // could roll forward and these assertions shouldn't be hardcoded to it.
+    await expect(table.getByRole('cell', { name: /^Q1-\d{4}$/ })).toBeVisible();
+    await expect(table.getByRole('cell', { name: /^Q4-\d{4}$/ })).toBeVisible();
   });
 
   test('quarterly table has correct columns', async ({ page }) => {
@@ -35,10 +37,10 @@ test.describe('Reports page', () => {
     await expect(dataRows.first()).toBeVisible();
   });
 
-  test('month-over-month table shows Jan and Dec 2025', async ({ page }) => {
+  test('month-over-month table shows the first and last month', async ({ page }) => {
     const momTable = page.locator('table').filter({ hasText: 'Month' }).filter({ hasText: 'Growth Rate' });
-    await expect(momTable.getByRole('cell', { name: 'Jan 2025' })).toBeVisible();
-    await expect(momTable.getByRole('cell', { name: 'Dec 2025' })).toBeVisible();
+    await expect(momTable.getByRole('cell', { name: /^Jan \d{4}$/ })).toBeVisible();
+    await expect(momTable.getByRole('cell', { name: /^Dec \d{4}$/ })).toBeVisible();
   });
 
   test('summary stats are displayed', async ({ page }) => {
@@ -46,12 +48,12 @@ test.describe('Reports page', () => {
     await expect(page.getByText('Avg Monthly Revenue')).toBeVisible();
     await expect(page.getByText('Total Orders (YTD)')).toBeVisible();
     await expect(page.getByText('Best Performing Quarter')).toBeVisible();
-    await expect(page.getByText('Q4-2025').first()).toBeVisible();
+    await expect(page.getByText(/^Q4-\d{4}$/).first()).toBeVisible();
   });
 
   test('monthly revenue trend chart is rendered', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Monthly Revenue Trend' })).toBeVisible();
-    await expect(page.getByText('Jan 2025').first()).toBeVisible();
-    await expect(page.getByText('Dec 2025').first()).toBeVisible();
+    await expect(page.getByText(/^Jan \d{4}$/).first()).toBeVisible();
+    await expect(page.getByText(/^Dec \d{4}$/).first()).toBeVisible();
   });
 });

@@ -32,7 +32,9 @@ test.describe('Restocking page', () => {
   });
 
   test('table has data rows', async ({ page }) => {
-    const rows = page.locator('tbody tr');
+    // Scope to the recommendations table so a future second table on
+    // this page can't silently pass the assertion via its own rows.
+    const rows = page.locator('table').filter({ hasText: 'Qty to Order' }).locator('tbody tr');
     await expect(rows.first()).toBeVisible();
   });
 

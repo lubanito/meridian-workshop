@@ -325,6 +325,10 @@ export default {
   },
 
   // Months
+  // Note: 'may' has only one entry — it serves as both the short and the
+  // long form because "May" is identical in either case. There is no
+  // "may: 'May'" duplicate further down on purpose; t('months.may') in
+  // FilterBar.vue resolves through the single key.
   months: {
     jan: 'Jan',
     feb: 'Feb',

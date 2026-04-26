@@ -226,8 +226,15 @@ const poLoadError = ref('')
 
 // Single watch handles both the keyboard-listener lifecycle and the
 // open-time form/PO setup, so the two concerns can't diverge.
-watch(() => props.isOpen, async (open) => {
+// Watches both isOpen and backlogItem so a parent can open the modal
+// before backlogItem is wired (or while it's null) without crashing —
+// loadPO() and the form prefill both need a non-null backlogItem.
+watch(() => [props.isOpen, props.backlogItem], async ([open, item]) => {
   if (open) {
+    // Don't try to render a real form/PO while we still have nothing to
+    // show. The v-if on the template covers the visual case, but the
+    // setup logic below (shortage, loadPO) would NPE.
+    if (!item) return
     // Capture the element that opened the dialog so focus can be
     // restored to it on close — WCAG 2.4.3 expects focus to return
     // to a logical predecessor when a modal dismisses.
@@ -394,7 +401,7 @@ const submit = async () => {
 }
 
 .sku { font-family: monospace; color: var(--color-accent); }
-.shortage { color: #dc2626; font-weight: 500; }
+.shortage { color: var(--color-danger); font-weight: 500; }
 
 .form-grid {
   display: grid;

@@ -212,7 +212,10 @@ class CreatePurchaseOrderRequest(BaseModel):
     # ge=0.01 instead of gt=0 — the smallest currency unit that won't drift
     # via float multiplication on multi-row totals. Anything smaller is a 422.
     unit_cost: float = Field(..., ge=0.01)
-    expected_delivery_date: str
+    # max_length is generous enough for ISO 8601 date *and* datetime
+    # variants without bloating error messages — _validate_iso_date below
+    # rejects everything that isn't strict YYYY-MM-DD anyway.
+    expected_delivery_date: str = Field(..., max_length=32)
     notes: Optional[str] = Field(default=None, max_length=2000)
 
     @field_validator('expected_delivery_date')
@@ -233,7 +236,7 @@ class Task(BaseModel):
 class CreateTaskRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     priority: Literal['low', 'medium', 'high'] = 'medium'
-    due_date: Optional[str] = None
+    due_date: Optional[str] = Field(default=None, max_length=32)
 
     @field_validator('due_date')
     @classmethod

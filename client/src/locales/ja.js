@@ -325,6 +325,9 @@ export default {
   },
 
   // Months
+  // Note: 'may' (= '5月') has only one entry — short and long form are
+  // identical in Japanese the same way "May" is identical in English,
+  // so there is intentionally no second "may: '5月'" further down.
   months: {
     jan: '1月',
     feb: '2月',

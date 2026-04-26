@@ -288,6 +288,10 @@ export default {
       // 0 between keystrokes and the cursor jumps. Normalise to 0 on @blur.
       if (raw === '') return
       editedQtys.value[rowKey] = Math.max(0, Math.floor(Number(raw) || 0))
+      // Mark this as a user-driven edit so the success-banner clear
+      // watcher (further down) only fires for real edits, not for the
+      // recommendations-watch reseeding qtys after a filter change.
+      successMessage.value = false
     }
 
     // Commit-time normaliser: if the user leaves the field empty or
@@ -295,7 +299,10 @@ export default {
     // downstream computeds don't see undefined.
     const normalizeQty = (rowKey, raw) => {
       const n = Number(raw)
-      if (raw === '' || Number.isNaN(n) || n < 0) editedQtys.value[rowKey] = 0
+      if (raw === '' || Number.isNaN(n) || n < 0) {
+        editedQtys.value[rowKey] = 0
+        successMessage.value = false
+      }
     }
 
     // Keep editedQtys in sync with recommendations. If the user has already
@@ -449,14 +456,12 @@ export default {
     // are module-level refs shared with every component that calls useFilters().
     watch([selectedLocation, selectedCategory], loadData, { immediate: true })
 
-    // Clear the draft preview banner whenever the user edits a qty or the
-    // budget ceiling — the banner snapshots a moment in time, so leaving
-    // it visible after edits would show stale line items.
-    watch(
-      [editedQtys, budgetCeiling],
-      () => { successMessage.value = false },
-      { deep: true }
-    )
+    // Clear the draft preview banner only when the budget ceiling
+    // changes — qty edits are handled in updateQty/normalizeQty so we
+    // don't conflate user-driven edits with the recommendations watcher
+    // reseeding editedQtys on a filter change (which would otherwise
+    // clear the banner unexpectedly).
+    watch(budgetCeiling, () => { successMessage.value = false })
 
     onUnmounted(() => {
       if (emptyNoticeTimer) clearTimeout(emptyNoticeTimer)

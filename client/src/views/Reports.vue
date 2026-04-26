@@ -55,7 +55,7 @@
                its own role="img" + aria-label so a screen reader can
                read the per-month value, not just the chart title. -->
           <div class="bar-chart" role="group" :aria-label="t('reports.monthlyTrend')">
-            <div v-for="month in monthlyData" :key="month.month" class="bar-wrapper">
+            <div v-for="month in sortedMonthlyData" :key="month.month" class="bar-wrapper">
               <div class="bar-container">
                 <div
                   class="bar"
@@ -90,19 +90,19 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(month, index) in monthlyData" :key="month.month">
+              <tr v-for="(month, index) in sortedMonthlyData" :key="month.month">
                 <td><strong>{{ formatMonth(month.month) }}</strong></td>
                 <td>{{ month.order_count }}</td>
                 <td>{{ formatCurrency(month.revenue) }}</td>
                 <td>
-                  <span v-if="index > 0" :class="getChangeClass(month.revenue, monthlyData[index - 1].revenue)">
-                    {{ getChangeValue(month.revenue, monthlyData[index - 1].revenue) }}
+                  <span v-if="index > 0" :class="getChangeClass(month.revenue, sortedMonthlyData[index - 1].revenue)">
+                    {{ getChangeValue(month.revenue, sortedMonthlyData[index - 1].revenue) }}
                   </span>
                   <span v-else>-</span>
                 </td>
                 <td>
-                  <span v-if="index > 0" :class="getChangeClass(month.revenue, monthlyData[index - 1].revenue)">
-                    {{ getGrowthRate(month.revenue, monthlyData[index - 1].revenue) }}
+                  <span v-if="index > 0" :class="getChangeClass(month.revenue, sortedMonthlyData[index - 1].revenue)">
+                    {{ getGrowthRate(month.revenue, sortedMonthlyData[index - 1].revenue) }}
                   </span>
                   <span v-else>-</span>
                 </td>
@@ -154,6 +154,14 @@ export default {
     const error = ref(null)
     const quarterlyData = ref([])
     const monthlyData = ref([])
+
+    // Sort chronologically by 'YYYY-MM' so the month-over-month delta
+    // never reads from the wrong neighbour if the API ever returns the
+    // months in a different order. localeCompare on YYYY-MM is correct
+    // for chronological order because the format is zero-padded.
+    const sortedMonthlyData = computed(() =>
+      [...monthlyData.value].sort((a, b) => a.month.localeCompare(b.month))
+    )
 
     const totalRevenue = computed(() =>
       monthlyData.value.reduce((sum, m) => sum + m.revenue, 0)
@@ -254,7 +262,7 @@ export default {
     return {
       t,
       loading, error,
-      quarterlyData, monthlyData,
+      quarterlyData, monthlyData, sortedMonthlyData,
       totalRevenue, avgMonthlyRevenue, totalOrders, bestQuarter,
       monthFilterActive,
       formatCurrency, formatMonth, getBarHeight,
